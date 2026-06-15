@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+.git/
+logs/
+.env
+# Ne pas envoyer ces fichiers au démon Docker lors du build

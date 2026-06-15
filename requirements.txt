@@ -1,0 +1,16 @@
+fastapi[standard]          # FastAPI with all optional dependencies for full functionality
+pydantic                   # Data validation and settings management using Python type annotations
+uvicorn[standard]          # ASGI server for FastAPI, with optional dependencies for improved performance and features
+python-jose                # passlib[bcrypt]       # Uncomment if you need password hashing support
+types-python-jose
+SQLAlchemy                 # SQL toolkit and Object-Relational Mapping (ORM) library for Python
+asyncpg                    # PostgreSQL database adapter for Python, optimized for performance
+python-dotenv              # For loading environment variables from a .env file, useful for configuration management
+argon2-cffi                # Password hashing library, an alternative to bcrypt, providing strong security
+alembic                    # Database migration tool for SQLAlchemy, useful for managing database schema changes
+uvloop                     # High-performance event loop for asyncio, only on Unix-based systems, can improve performance of FastAPI applications
+websockets                 # WebSocket support
+redis[asyncio,hiredis]     # Redis client with support for asyncio and the hiredis parser, useful for caching and message brokering
+alembic-postgresql-enum    # Optional dependency for Alembic to support PostgreSQL ENUM types
+celery
+celery-types
