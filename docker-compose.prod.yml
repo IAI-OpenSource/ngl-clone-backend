@@ -14,11 +14,7 @@ services:
       retries: 3
       start_period: ${START_PERIOD:-5}s
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+
 
   # Workers Celery (Tâches de fond)
   worker:
@@ -30,14 +26,4 @@ services:
     volumes:
       - .:/app
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-volumes:
-  db_data:
-  redis_data:
-
 
