@@ -1,0 +1,147 @@
+// Schéma DBML pour une meilleure visualisation de la structure de la base de données
+// Visualisable sur https://dbdiagram.io/d
+Enum "wa_status" {
+  "pending"
+  "queued"
+  "sent"
+  "delivered"
+  "failed"
+}
+
+Enum "wa_member_role" {
+  "member"
+  "admin"
+}
+
+Enum "wa_sync_type" {
+  "initial_import"
+  "member_joined"
+  "member_left"
+  "manual_refresh"
+}
+
+Enum "report_status" {
+  "pending"
+  "actioned"
+  "dismissed"
+}
+
+Enum "report_category" {
+  "harassment"
+  "spam"
+  "inappropriate"
+  "other"
+}
+
+Table "threads" {
+  "id" UUID [pk, default: `gen_random_uuid()`]
+  "name" VARCHAR(100) [not null]
+  "slug" VARCHAR(50) [unique, not null]
+  "description" TEXT
+  "wa_group_jid" VARCHAR(100) [unique, not null]
+  "wa_group_name" VARCHAR(100)
+  "password_hash" VARCHAR(255) [not null]
+  "is_active" BOOLEAN [not null, default: true]
+  "last_wa_sync_at" TIMESTAMPTZ
+  "created_at" TIMESTAMPTZ [not null, default: `NOW()`]
+  "updated_at" TIMESTAMPTZ [not null, default: `NOW()`]
+}
+
+Table "members" {
+  "id" UUID [pk, default: `gen_random_uuid()`]
+  "wa_jid" VARCHAR(100) [unique, not null]
+  "wa_name" VARCHAR(100)
+  "display_name" VARCHAR(100)
+  "phone_number" VARCHAR(20)
+  "avatar_url" TEXT
+  "is_active" BOOLEAN [not null, default: true]
+  "created_at" TIMESTAMPTZ [not null, default: `NOW()`]
+  "updated_at" TIMESTAMPTZ [not null, default: `NOW()`]
+}
+
+Table "thread_members" {
+  "thread_id" UUID [not null]
+  "member_id" UUID [not null]
+  "wa_role" wa_member_role [not null, default: 'member']
+  "is_active" BOOLEAN [not null, default: true]
+  "left_at" TIMESTAMPTZ
+
+  Indexes {
+    (thread_id, member_id) [pk]
+    member_id [name: "idx_thread_members_member"]
+  }
+}
+
+Table "messages" {
+  "id" UUID [pk, default: `gen_random_uuid()`]
+  "thread_id" UUID [not null]
+  "content" TEXT [not null]
+  "wa_message_id" VARCHAR(100)
+  "wa_status" wa_status [not null, default: 'pending']
+  "wa_forwarded_at" TIMESTAMPTZ
+  "is_hidden" BOOLEAN [not null, default: false]
+  "hidden_reason" VARCHAR(100)
+  "hidden_at" TIMESTAMPTZ
+  "created_at" TIMESTAMPTZ [not null, default: `NOW()`]
+
+  Indexes {
+    (thread_id, created_at) [name: "idx_messages_thread_created"]
+    (wa_status, created_at) [name: "idx_messages_wa_status"]
+  }
+}
+
+Table "message_mentions" {
+  "message_id" UUID [not null]
+  "member_id" UUID [not null]
+  "created_at" TIMESTAMPTZ [not null, default: `NOW()`]
+
+  Indexes {
+    (message_id, member_id) [pk]
+    member_id [name: "idx_message_mentions_member"]
+  }
+}
+
+Table "wa_delivery_log" {
+  "id" UUID [pk, default: `gen_random_uuid()`]
+  "message_id" UUID [not null]
+  "status" wa_status [not null]
+  "error_code" VARCHAR(50)
+  "error_msg" TEXT
+  "payload" JSONB
+  "attempted_at" TIMESTAMPTZ [not null, default: `NOW()`]
+
+  Indexes {
+    (message_id, attempted_at) [name: "idx_wa_delivery_message"]
+  }
+}
+
+Table "wa_sync_log" {
+  "id" UUID [pk, default: `gen_random_uuid()`]
+  "thread_id" UUID [not null]
+  "sync_type" wa_sync_type [not null]
+  "wa_jid" VARCHAR(100)
+  "members_added" INT [not null, default: 0]
+  "members_removed" INT [not null, default: 0]
+  "payload" JSONB
+  "created_at" TIMESTAMPTZ [not null, default: `NOW()`]
+
+  Indexes {
+    (thread_id, created_at) [name: "idx_wa_sync_thread"]
+  }
+}
+
+
+
+Ref:"threads"."id" < "thread_members"."thread_id" [delete: cascade]
+
+Ref:"members"."id" < "thread_members"."member_id" [delete: cascade]
+
+Ref:"threads"."id" < "messages"."thread_id" [delete: cascade]
+
+Ref:"messages"."id" < "message_mentions"."message_id" [delete: cascade]
+
+Ref:"members"."id" < "message_mentions"."member_id" [delete: cascade]
+
+Ref:"messages"."id" < "wa_delivery_log"."message_id" [delete: cascade]
+
+Ref:"threads"."id" < "wa_sync_log"."thread_id" [delete: cascade]
