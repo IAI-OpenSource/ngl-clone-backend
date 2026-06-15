@@ -28,7 +28,6 @@ if TYPE_CHECKING:
 # Noms des contraintes
 FK_MESSAGE_MENTIONS_MESSAGE = "fk_message_mentions_message"
 FK_MESSAGE_MENTIONS_MEMBER = "fk_message_mentions_member"
-UQ_MESSAGE_MENTIONS_MESSAGE_MEMBER = "uq_message_mentions_message_member"
 IDX_MESSAGE_MENTIONS_MEMBER = "idx_message_mentions_member"
 
 
@@ -79,5 +78,4 @@ class MessageMention(Base, IntegrityMapperMixin):
     ERROR_MESSAGES = {
         FK_MESSAGE_MENTIONS_MESSAGE: "Le message spécifié n'existe pas.",
         FK_MESSAGE_MENTIONS_MEMBER: "Le membre spécifié n'existe pas.",
-        UQ_MESSAGE_MENTIONS_MESSAGE_MEMBER: "Ce membre est déjà mentionné dans ce message.",
     }
