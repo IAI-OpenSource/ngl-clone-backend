@@ -25,7 +25,7 @@ WORKDIR $WORKDIR
 
 # Décommenter pour installer libpq-dev pour PostgreSQL
 RUN apt-get update && apt-get install -y \
-#    libpq-dev \
+    libpq-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

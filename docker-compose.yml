@@ -2,7 +2,7 @@ services:
   # Base de données PostgreSQL
   db:
     image: postgres:15-alpine
-    container_name: app_db
+    container_name: ngl_clone_db
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
@@ -22,7 +22,7 @@ services:
   # Cache/Broker Redis
   redis:
       image: redis:7-alpine
-      container_name: app_redis
+      container_name: ngl_clone_redis
       ports:
         - "${REDIS_CACHE_PORT}:6379"
       command: redis-server --appendonly yes # Active la persistance sur disque
@@ -39,7 +39,7 @@ services:
   # Backend FastAPI
   api:
     build: .
-    container_name: app_api
+    container_name: ngl_clone_api
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
       - .:/app
@@ -61,24 +61,39 @@ services:
 
 
   # Workers Celery (Tâches de fond)
-#  worker:
-#    build: .
-#    container_name: app_default_worker
-#    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=5 --max-tasks-per-child=10 -n default_worker@%h
-#     # --concurrency=2 : Limite à 2 tâches simultanées pour éviter de surcharger le serveur
-#     # --max-tasks-per-child=10 : Redémarre le worker après 10 tâches pour libérer la mémoire (utile si certaines tâches sont gourmandes en RAM)
-#    volumes:
-#      - .:/app
-#    restart: unless-stopped
-#    depends_on:
-#      db:
-#        condition: service_healthy
-#      redis:
-#        condition: service_healthy
+  worker:
+    build: .
+    container_name: ngl_clone_worker
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=5 --max-tasks-per-child=10 -n default_worker@%h
+     # --concurrency=2 : Limite à 2 tâches simultanées pour éviter de surcharger le serveur
+     # --max-tasks-per-child=10 : Redémarre le worker après 10 tâches pour libérer la mémoire (utile si certaines tâches sont gourmandes en RAM)
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  evolution-api:
+    container_name: ngl_clone_evolution_api
+    image: evoapicloud/evolution-go
+    ports:
+      - "${EVO_API_PORT:-8081}:8080"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - evolution_instances:/evolution/instances
+
 
 
 volumes:
   db_data:
   redis_data:
+  evolution_instances:
 
 
