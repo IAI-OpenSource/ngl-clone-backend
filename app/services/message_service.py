@@ -100,12 +100,13 @@ class MessageService:
         )
 
     async def service_create_message(
-        self, message_data: CreateMessage
+        self, message_data: CreateMessage, thread_id: str
     ) -> DefaultAppServiceResult[ReadMessage]:
         """Logique métier pour ajouter un message à un thread."""
+        thread_id_uuid = UUID(thread_id)
 
         message_repo = await self.__message_repo.insert_message(
-            thread_id=message_data.thread_id,
+            thread_id=thread_id_uuid,
             content=message_data.content,
         )
 
@@ -118,8 +119,9 @@ class MessageService:
         await self.__message_cache.set_message_in_cache(
             message=read_message, ttl=CacheDuration.TWENTY_MINUTES
         )
+
         await self.__thread_cache.invalid_messages_by_thread_in_cache(
-            thread_id=message_data.thread_id
+            thread_id=thread_id_uuid
         )
 
         return ServiceResult.service_success(

@@ -17,6 +17,8 @@ from app.schemas.message_schemas import (
     ReadMessage,
 )
 from app.services.message_service import MessageService
+from app.schemas.thread_schemas import ThreadAuthPayload
+from app.auth.dependencies import get_connected_thread
 
 router = APIRouter(prefix="/messages", tags=[ApiTags.MESSAGES])
 
@@ -32,12 +34,14 @@ def get_message_service(
 async def create_message(
     message_data: CreateMessage,
     response: Response,
+    thread: Annotated[ThreadAuthPayload, Depends(get_connected_thread)],
     message_service: Annotated[MessageService, Depends(get_message_service)],
 ) -> ApiBaseResponse[ReadMessage, AppError]:
     """Route pour ajouter un message à un thread."""
 
     service_result = await message_service.service_create_message(
-        message_data=message_data
+        message_data=message_data,
+        thread_id=thread.thread_id
     )
 
     return service_result.to_HTTP_api_base_response(reponse=response)

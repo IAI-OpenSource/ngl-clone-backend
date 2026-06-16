@@ -2,7 +2,7 @@
 Schémas Pydantic pour les messages (messages).
 Ces schémas définissent quels attributs sont exposés au front.
 """
-
+import re
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
@@ -11,13 +11,35 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.db.models.enums.enums import WAStatus
 from app.schemas.globals.api_base_response import DefaultAppApiResponse
+from app.utils.security_utils import has_too_many_repeated_chars
 
 
 class CreateMessage(BaseModel):
     """Schéma pour la création d'un message."""
 
-    thread_id: UUID = Field(description="ID du thread auquel le message appartient")
-    content: str = Field(description="Contenu du message", min_length=1)
+    content: str = Field(description="Contenu du message", min_length=1, max_length=500)
+
+    @classmethod
+    def validate_content(cls, value: str) -> str:
+        # Message vide ou uniquement des espaces
+        if not value or not value.strip():
+            raise ValueError("Le message ne peut pas être vide.")
+
+        # Liens
+        url_pattern = re.compile(
+            r"(https?://|www\.|[a-zA-Z0-9-]+\.(com|net|org|io|dev|fr|tg|edu)\b)",
+            re.IGNORECASE,
+        )
+
+        if url_pattern.search(value):
+            raise ValueError("Pas de lien ici tchaléééééé")
+
+        repeated_chars_pattern = re.compile(r"(.)\1{7,}")
+
+        if repeated_chars_pattern.search(value) or has_too_many_repeated_chars(value):
+            raise ValueError("Soit plus sérieux orrrrrrrrrrrrh")
+
+        return value
 
 
 class UpdateMessage(BaseModel):
