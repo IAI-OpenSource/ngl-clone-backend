@@ -59,7 +59,7 @@ class Thread(Base, IntegrityMapperMixin):
     wa_group_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     # Sécurité
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, default=None, init=False)
 
     # Statut
     is_active: Mapped[bool] = mapped_column(
