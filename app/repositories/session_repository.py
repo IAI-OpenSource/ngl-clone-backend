@@ -6,7 +6,6 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.session import Session
-from app.globals.businnes_error import AppError, AppErrorType
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
 from app.schemas.session_schemas import CreateSession
@@ -65,10 +64,7 @@ class SessionRepository:
             if session is None:
                 logger.info("Session non Trouvé")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_message=Messages.NOT_FOUND,
-                        error_type=AppErrorType.NOT_FOUND,
-                    ),
+                    RepositoriesUtils.not_found_error(Messages.NOT_FOUND),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 
