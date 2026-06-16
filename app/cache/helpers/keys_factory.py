@@ -18,6 +18,25 @@ class CacheKeysFactory:
         AvailableCacheKeys.SESSION_OBJECT: CacheKey.new_key(
             AvailableCacheKeys.SESSION_OBJECT, 1
         ),
+        AvailableCacheKeys.MESSAGE_OBJECT: CacheKey.new_key(
+            AvailableCacheKeys.MESSAGE_OBJECT, 1
+        ),
+        AvailableCacheKeys.THREAD_OBJECT: CacheKey.new_key(
+            AvailableCacheKeys.THREAD_OBJECT, 1
+        ),
+        AvailableCacheKeys.MEMBER_OBJECT: CacheKey.new_key(
+            AvailableCacheKeys.MEMBER_OBJECT, 1
+        ),
+        # Clés pour les listes
+        AvailableCacheKeys.THREADS_LIST: CacheKey.new_key(
+            AvailableCacheKeys.THREADS_LIST, 0
+        ),
+        AvailableCacheKeys.MESSAGES_BY_THREAD_LIST: CacheKey.new_key(
+            AvailableCacheKeys.MESSAGES_BY_THREAD_LIST, 1
+        ),
+        AvailableCacheKeys.MEMBERS_BY_THREAD_LIST: CacheKey.new_key(
+            AvailableCacheKeys.MEMBERS_BY_THREAD_LIST, 1
+        ),
     }
 
     @classmethod
