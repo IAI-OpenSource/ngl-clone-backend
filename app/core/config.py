@@ -46,6 +46,7 @@ REFRESH_TOKEN_EXPIRES_SECONDES: int = int(
 ## les IDs des cookies
 JWT_COOKIE_ACCESS_ID: str = "_SECURE_TOKEN"  ## encoder ID de le session
 SID_REF_COOKIE: str = "_SID_REFRESH"  ## encoder le refresh token
+JWT_THREAD_ACCESS_ID: str = "_SECURE_THREAD_TOKEN"
 
 ## url redis
 REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379/0")

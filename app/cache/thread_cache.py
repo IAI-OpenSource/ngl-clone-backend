@@ -13,6 +13,7 @@ from app.globals.cache_duration import CacheDuration
 from app.schemas.thread_schemas import ReadThread
 from app.schemas.message_schemas import ReadMessage
 from app.schemas.member_schemas import ReadMember
+from app.schemas.thread_schemas import InternalForLoginReadThread
 
 logger = getLogger(__name__)
 
@@ -36,6 +37,62 @@ class ThreadCache:
         return CacheKeysFactory.get_cache_key(
             AvailableCacheKeys.THREAD_OBJECT
         ).set_arguments(id=str(thread_id))
+
+
+    async def set_raw_thread_in_cache(self, thread : InternalForLoginReadThread, ttl: int = CacheDuration.TWENTY_MINUTES) -> None:
+        """Enregistre un thread dans le cache à partir d'une instance de InternalForLoginReadThread.
+
+        Args:
+            thread: Instance de InternalForLoginReadThread à mettre en cache
+            ttl: Durée de vie en secondes
+        """
+        try:
+            cache_key = CacheKeysFactory.get_cache_key(
+                AvailableCacheKeys.INTERNAL_THREAD_RAW_OBJECT
+            ).set_arguments(id=str(thread.id))
+
+            await self.cache.save_pydantic_model_in_cache(
+                key=cache_key, model_instance=thread, expire_seconds=ttl
+            )
+        except Exception as e:
+            CacheUtils.traiter_exceptions(e, logger)
+
+    async def get_raw_thread_from_cache(self, thread_id: UUID) -> Optional[InternalForLoginReadThread]:
+        """Récupère un thread brut (InternalForLoginReadThread) depuis le cache.
+
+        Args:
+            thread_id: ID du thread à récupérer
+
+        Returns:
+            Optional[InternalForLoginReadThread]: Le thread brut si trouvé, None sinon
+        """
+        try:
+            cache_key = CacheKeysFactory.get_cache_key(
+                AvailableCacheKeys.INTERNAL_THREAD_RAW_OBJECT
+            ).set_arguments(id=str(thread_id))
+
+            return await self.cache.get_pydantic_model_from_cache(
+                key=cache_key, model_class=InternalForLoginReadThread
+            )
+        except Exception as e:
+            CacheUtils.traiter_exceptions(e, logger)
+            return None
+
+    async def invalidate_raw_thread_in_cache(self, thread_id: UUID) -> None:
+        """Invalide un thread brut (InternalForLoginReadThread) dans le cache.
+
+        Args:
+            thread_id: ID du thread à invalider
+        """
+        try:
+            cache_key = CacheKeysFactory.get_cache_key(
+                AvailableCacheKeys.INTERNAL_THREAD_RAW_OBJECT
+            ).set_arguments(id=str(thread_id))
+
+            await self.cache.delete_in_cache(key=cache_key)
+            logger.info(f"Cache du thread brut invalidé pour l'ID : {thread_id}")
+        except Exception as e:
+            CacheUtils.traiter_exceptions(e, logger)
 
     async def set_thread_in_cache(
         self, thread: ReadThread, ttl: int = CacheDuration.TWENTY_MINUTES

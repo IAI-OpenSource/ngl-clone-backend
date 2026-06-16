@@ -31,6 +31,8 @@ class AvailableCacheKeys(str, Enum):
     # Clés de cache pour les threads
     THREAD_OBJECT = BaseCacheEntity.THREAD  # Clé pour un thread spécifique
 
+    INTERNAL_THREAD_RAW_OBJECT = BaseCacheEntity.THREAD + ":raw"  # Clé pour les données brutes d'un thread
+
     # Clés de cache pour les membres
     MEMBER_OBJECT = BaseCacheEntity.MEMBER  # Clé pour un membre spécifique
 

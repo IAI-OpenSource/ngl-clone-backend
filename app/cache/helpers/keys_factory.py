@@ -37,6 +37,9 @@ class CacheKeysFactory:
         AvailableCacheKeys.MEMBERS_BY_THREAD_LIST: CacheKey.new_key(
             AvailableCacheKeys.MEMBERS_BY_THREAD_LIST, 1
         ),
+        AvailableCacheKeys.INTERNAL_THREAD_RAW_OBJECT: CacheKey.new_key(
+            AvailableCacheKeys.INTERNAL_THREAD_RAW_OBJECT, 1
+        )
     }
 
     @classmethod
