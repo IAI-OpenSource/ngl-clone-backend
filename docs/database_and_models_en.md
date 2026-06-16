@@ -131,3 +131,32 @@ class Product(Base, IntegrityMapperMixin):
         CHK_PRODUCTS_POSITIVE_PRICE: "A product's price cannot be negative.",
     }
 ```
+
+---
+
+## 5. Model Imports
+
+> [!IMPORTANT]
+> **All models must be imported in `app/db/__init__.py` via the `add_all_tables()` function.**
+> Do not export models from `app/db/models/__init__.py`.
+
+### Why this pattern?
+The centralized import pattern in `app/db/__init__.py` ensures that:
+- All models are loaded when the application starts
+- There are no circular import issues
+- The database is properly initialized
+
+### How to implement it?
+1. **Create your model** in `app/db/models/` (e.g., `thread.py`)
+2. **Add the import** in `app/db/__init__.py`:
+
+```python
+# app/db/__init__.py
+def add_all_tables():
+    from app.db.models.user import User
+    from app.db.models.session import Session
+    from app.db.models.thread import Thread
+    # Add all your new models here
+    
+add_all_tables()
+```
