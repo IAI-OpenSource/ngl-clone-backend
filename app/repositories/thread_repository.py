@@ -16,8 +16,6 @@ from fastapi import status
 from app.db.models.thread import Thread
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
-from app.globals.businnes_error import AppError, AppErrorType
-
 logger = getLogger(__name__)
 
 
@@ -70,10 +68,7 @@ class ThreadRepository:
             if thread is None:
                 logger.info(f"Thread avec ID {thread_id} non trouvé")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_type=AppErrorType.NOT_FOUND,
-                        error_message="Thread inexistant",
-                    ),
+                    RepositoriesUtils.not_found_error("Thread inexistant"),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 
@@ -94,10 +89,7 @@ class ThreadRepository:
             if thread is None:
                 logger.info(f"Thread avec slug {slug} non trouvé")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_type=AppErrorType.NOT_FOUND,
-                        error_message="Thread inexistant",
-                    ),
+                    RepositoriesUtils.not_found_error("Thread inexistant"),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 
@@ -120,10 +112,7 @@ class ThreadRepository:
             if thread is None:
                 logger.info(f"Thread avec wa_group_jid {wa_group_jid} non trouvé")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_type=AppErrorType.NOT_FOUND,
-                        error_message="Thread inexistant",
-                    ),
+                    RepositoriesUtils.not_found_error("Thread inexistant"),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 

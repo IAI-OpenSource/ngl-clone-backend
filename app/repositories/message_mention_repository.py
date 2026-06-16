@@ -14,7 +14,6 @@ from fastapi import status
 from app.db.models.message_mention import MessageMention
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
-from app.globals.businnes_error import AppError, AppErrorType
 
 logger = getLogger(__name__)
 
@@ -65,10 +64,7 @@ class MessageMentionRepository:
             if message_mention is None:
                 logger.info(f"Mention message {message_id} - membre {member_id} non trouvée")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_type=AppErrorType.NOT_FOUND,
-                        error_message="Mention inexistante",
-                    ),
+                    RepositoriesUtils.not_found_error("Mention inexistante"),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 

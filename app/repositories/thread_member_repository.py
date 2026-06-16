@@ -17,7 +17,6 @@ from app.db.models.thread_member import ThreadMember
 from app.db.models.enums.enums import WAMemberRole
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
-from app.globals.businnes_error import AppError, AppErrorType
 
 logger = getLogger(__name__)
 
@@ -74,10 +73,7 @@ class ThreadMemberRepository:
             if thread_member is None:
                 logger.info(f"Association thread {thread_id} - membre {member_id} non trouvée")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_type=AppErrorType.NOT_FOUND,
-                        error_message="Association thread/membre inexistante",
-                    ),
+                    RepositoriesUtils.not_found_error("Association thread/membre inexistante"),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 

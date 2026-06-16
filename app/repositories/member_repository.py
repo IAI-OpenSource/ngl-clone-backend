@@ -16,7 +16,6 @@ from fastapi import status
 from app.db.models.member import Member
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
-from app.globals.businnes_error import AppError, AppErrorType
 
 logger = getLogger(__name__)
 
@@ -68,10 +67,7 @@ class MemberRepository:
             if member is None:
                 logger.info(f"Membre avec ID {member_id} non trouvé")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_type=AppErrorType.NOT_FOUND,
-                        error_message="Membre inexistant",
-                    ),
+                    RepositoriesUtils.not_found_error("Membre inexistant"),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 
@@ -92,10 +88,7 @@ class MemberRepository:
             if member is None:
                 logger.info(f"Membre avec wa_jid {wa_jid} non trouvé")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_type=AppErrorType.NOT_FOUND,
-                        error_message="Membre inexistant",
-                    ),
+                    RepositoriesUtils.not_found_error("Membre inexistant"),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 

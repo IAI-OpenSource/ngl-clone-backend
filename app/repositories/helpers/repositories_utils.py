@@ -19,6 +19,20 @@ class RepositoriesUtils:
     """Classe pour les fonctions utilitaires des repositories, tout ce qui est redondant sera mit ici"""
 
     @classmethod
+    def not_found_error(cls, error_message: str) -> AppError:
+        """
+        Construit un AppError NOT_FOUND avec le message fourni.
+        Args:
+            error_message: Message d'erreur affiché à l'utilisateur
+        Returns:
+            Un objet AppError de type NOT_FOUND
+        """
+        return AppError(
+            error_type=AppErrorType.NOT_FOUND,
+            error_message=error_message,
+        )
+
+    @classmethod
     async def traiter_exception_inconnue(
         cls, exception: Exception, session: AsyncSession, logger: Logger
     ) -> DefaultAppCrudResult:

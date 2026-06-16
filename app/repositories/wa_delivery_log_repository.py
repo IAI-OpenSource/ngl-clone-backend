@@ -17,7 +17,6 @@ from app.db.models.wa_delivery_log import WADeliveryLog
 from app.db.models.enums.enums import WAStatus
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
-from app.globals.businnes_error import AppError, AppErrorType
 
 logger = getLogger(__name__)
 
@@ -76,10 +75,7 @@ class WADeliveryLogRepository:
             if delivery_log is None:
                 logger.info(f"Log de livraison avec ID {log_id} non trouvé")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_type=AppErrorType.NOT_FOUND,
-                        error_message="Log de livraison inexistant",
-                    ),
+                    RepositoriesUtils.not_found_error("Log de livraison inexistant"),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 
