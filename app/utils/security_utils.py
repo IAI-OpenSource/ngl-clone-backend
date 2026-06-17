@@ -1,4 +1,6 @@
 # utils/security.py
+from collections import Counter
+
 from fastapi import Request
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
@@ -6,6 +8,15 @@ from argon2.exceptions import VerifyMismatchError
 # Création d'un hasher Argon2
 ph = PasswordHasher()
 
+def has_too_many_repeated_chars(text: str, threshold: float = 0.7) -> bool:
+    text = text.replace(" ", "")
+
+    if len(text) < 10:
+        return False
+
+    most_common_count = Counter(text).most_common(1)[0][1]
+
+    return most_common_count / len(text) > threshold
 
 def hasher_password(password: str) -> str:
     """function pour hasher les mots de pass utilisateur dans

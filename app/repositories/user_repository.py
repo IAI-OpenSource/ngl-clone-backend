@@ -21,7 +21,6 @@ from fastapi import status
 
 from .helpers.repositories_utils import RepositoriesUtils
 from ..db.models.enums.enums import UserType
-from ..globals.businnes_error import AppError, AppErrorType
 
 logger = getLogger(__name__)
 
@@ -71,10 +70,7 @@ class UserRepository:
             if user is None:
                 logger.info("Utilisateur non Trouvé")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_type=AppErrorType.NOT_FOUND,
-                        error_message="Utilisateur inexistant",
-                    ),
+                    RepositoriesUtils.not_found_error("Utilisateur inexistant"),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 
@@ -96,10 +92,7 @@ class UserRepository:
             if user is None:
                 logger.info("Utilisateur non Trouvé")
                 return CrudResult.crud_failure(
-                    AppError(
-                        error_type=AppErrorType.NOT_FOUND,
-                        error_message="Utilisateur inexistant",
-                    ),
+                    RepositoriesUtils.not_found_error("Utilisateur inexistant"),
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
 

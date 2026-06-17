@@ -22,7 +22,7 @@ from app.routers.v1.base_router import v1_api_router
 import uvicorn
 from fastapi import FastAPI
 
-app = FastAPI(lifespan=lifespan, title="FastApi Template Backend", version="1.0.0")
+app = FastAPI(lifespan=lifespan, title="Ngl Clone Backend", version="1.0.0")
 
 setup_app_cors(app)
 

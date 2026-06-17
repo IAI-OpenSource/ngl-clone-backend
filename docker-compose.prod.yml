@@ -1,0 +1,29 @@
+services:
+  api:
+    build: .
+    container_name: ngl_clone_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+    ports:
+      - "${API_PORT:-8000}:8000"      # Expose le port 8000 de l'API sur le port défini dans .env ou 8000 par défaut
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8000/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: ${START_PERIOD:-5}s
+    restart: unless-stopped
+
+
+  # Workers Celery (Tâches de fond)
+  worker:
+    build: .
+    container_name: ngl_clone_worker
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=5 --max-tasks-per-child=10 -n default_worker@%h
+      # --concurrency=2 : Limite à 2 tâches simultanées pour éviter de surcharger le serveur
+    # --max-tasks-per-child=10 : Redémarre le worker après 10 tâches pour libérer la mémoire (utile si certaines tâches sont gourmandes en RAM)
+    volumes:
+      - .:/app
+    restart: unless-stopped
+

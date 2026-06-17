@@ -12,6 +12,9 @@ from app.auth.cookie_manager import CookieManager
 from app.auth.jwt_manager import JWTManager
 from app.core.config import JWT_COOKIE_ACCESS_ID, ACCESS_SECRET_KEY
 from app.services.user_service import UserService
+from app.core.config import JWT_THREAD_ACCESS_ID
+from app.schemas.thread_schemas import ThreadAuthPayload
+from app.services.auth_thread_service import AuthThreadService
 
 
 class _UserAuthDependencies:
@@ -83,6 +86,38 @@ class _UserAuthDependencies:
         return user.data
 
 
+class _ThreadAuthDependencies:
+    def __init__(
+            self,
+            db: AsyncSession,
+            response: Response,
+            request: HTTPConnection,
+            cache: CacheWrapper,
+    ):
+        self.db = db
+        self.cookie = CookieManager(response=response, request=request)
+        self._thread_svc = AuthThreadService(self.db, cache, response, request)
+
+    def get_connected_thread(self) -> ThreadAuthPayload:
+        access_token = self.cookie.get_cookie(cookie_id=JWT_THREAD_ACCESS_ID)
+
+        if access_token is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Vous n'etes connecté à aucun thread",
+            )
+
+        payload = JWTManager.decode_access_token(
+            token=access_token, enc_dec_key=ACCESS_SECRET_KEY
+        )
+
+        if payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Clé d'accès invalide"
+            )
+
+        return ThreadAuthPayload.model_validate(payload)
+
 # Fonction pour instancier ta classe avec tout ce qu'il faut
 def _get_user_auth_deps(
     request: HTTPConnection,
@@ -92,9 +127,23 @@ def _get_user_auth_deps(
 ) -> _UserAuthDependencies:
     return _UserAuthDependencies(db=db, response=response, request=request, cache=cache)
 
+def _get_thread_auth_deps(
+    request: HTTPConnection,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    cache: CacheWrapper = Depends(get_redis),
+) -> _ThreadAuthDependencies:
+    return _ThreadAuthDependencies(db=db, response=response, request=request, cache=cache)
+
 
 # Dépendance finale pour récupérer le user
 async def get_current_user(
     auth_deps: _UserAuthDependencies = Depends(_get_user_auth_deps),
 ) -> ReadUser:
     return await auth_deps.get_current_user()
+
+# Dépendance finale pour récupérer le thread connecté
+def get_connected_thread(
+    auth_deps: _ThreadAuthDependencies = Depends(_get_thread_auth_deps),
+) -> ThreadAuthPayload:
+    return auth_deps.get_connected_thread()
