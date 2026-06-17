@@ -4,3 +4,4 @@ class ApiTags:
     AUTHENTIFICATION: str = "Authentification"
     THREADS: str = "Threads"
     MESSAGES: str = "Messages"
+    MEMBERS: str = "Membres/Utilisateur"

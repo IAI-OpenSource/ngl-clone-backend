@@ -9,7 +9,7 @@ from logging import getLogger
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from fastapi import status
@@ -314,7 +314,11 @@ class MessageRepository:
             CrudResult contenant une liste de tuples (message, liste_des_membres_mentionnés)
         """
         try:
-            stmt = select(Message).where(Message.thread_id == thread_id)
+            stmt = (
+                select(Message)
+                .where(Message.thread_id == thread_id)
+                .order_by(desc(Message.created_at))
+            )
 
             if is_hidden:
                 stmt = stmt.where(Message.is_hidden == True)

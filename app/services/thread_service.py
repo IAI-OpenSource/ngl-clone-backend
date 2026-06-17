@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import List
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.cache.thread_cache import ThreadCache
 from app.globals.cache_duration import CacheDuration
 from app.repositories.thread_repository import ThreadRepository
+from app.repositories.thread_member_repository import ThreadMemberRepository
 from app.schemas.thread_schemas import CreateThread, ReadThread
+from app.schemas.member_schemas import ReadMember
 from app.db.models.thread import Thread
 from app.globals.businnes_error import AppError, AppErrorType
 from app.schemas.thread_schemas import ThreadAuthPayload
@@ -24,6 +27,7 @@ class ThreadService:
         self.__db = db
         self.__thread_cache = ThreadCache(cache)
         self.__thread_repo = ThreadRepository(self.__db)
+        self.__thread_member_repo = ThreadMemberRepository(self.__db)
         self._service_name = ServicesNames.THREAD_SERVICE
 
     @staticmethod
@@ -161,5 +165,56 @@ class ThreadService:
         return ServiceResult.service_success(
             data=read_thread,
             status_code=thread_repo.status_code,
+            service_name=self._service_name,
+        )
+
+    async def service_get_thread_members(
+        self, thread_id: UUID, include_inactive: bool = False
+    ) -> DefaultAppServiceResult[List[ReadMember]]:
+        """Logique métier pour récupérer les membres d'un thread.
+
+        Args:
+            thread_id: ID du thread
+            include_inactive: Si True, inclut les membres inactifs ou ayant quitté
+
+        Returns:
+            Liste de ReadMember (membres du thread)
+
+        Processus:
+            1. Vérifie le cache pour les membres du thread
+            2. Si non trouvé, récupère depuis la base de données
+            3. Met en cache le résultat
+            4. Retourne les membres
+        """
+        # Vérifier le cache
+        members_from_cache = await self.__thread_cache.get_members_by_thread_from_cache(
+            thread_id=thread_id
+        )
+
+        if members_from_cache is not None:
+            return ServiceResult.service_success(
+                data=members_from_cache,
+                service_name=self._service_name,
+            )
+
+        # Récupérer depuis la base de données
+        thread_members_repo = await self.__thread_member_repo.get_thread_members_with_details(
+            thread_id=thread_id, include_inactive=include_inactive
+        )
+
+        if thread_members_repo.is_error():
+            logger.error(f"Erreur lors de la récupération des membres du thread: {thread_members_repo.error}")
+            return thread_members_repo.to_service_error(service_name=self._service_name)
+
+        # Convertir ThreadMember en ReadMember
+        read_members = [ReadMember.model_validate(thread_member.member) for thread_member in thread_members_repo.data]
+
+        # Mettre en cache
+        await self.__thread_cache.set_members_by_thread_in_cache(
+            thread_id=thread_id, members=read_members, ttl=CacheDuration.TWENTY_MINUTES
+        )
+
+        return ServiceResult.service_success(
+            data=read_members,
             service_name=self._service_name,
         )

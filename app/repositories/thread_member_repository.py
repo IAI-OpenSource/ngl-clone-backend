@@ -11,9 +11,11 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from fastapi import status
 
 from app.db.models.thread_member import ThreadMember
+from app.db.models.member import Member
 from app.db.models.enums.enums import WAMemberRole
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
@@ -189,6 +191,40 @@ class ThreadMemberRepository:
 
             logger.info(f"Association thread {thread_id} - membre {member_id} supprimée avec succès")
             return CrudResult.crud_success(None, status_code=status.HTTP_204_NO_CONTENT)
+
+        except Exception as e:
+            return await RepositoriesUtils.traiter_errors_en_global(
+                e, self.db, logger, ThreadMember
+            )
+
+    async def get_thread_members_with_details(
+        self, thread_id: UUID, include_inactive: bool = False
+    ) -> DefaultAppCrudResult[list[ThreadMember]]:
+        """Récupère les membres d'un thread avec leurs détails complets (optimisé avec joinedload).
+        
+        Args:
+            thread_id: ID du thread
+            include_inactive: Si True, inclut les membres inactifs ou ayant quitté
+            
+        Returns:
+            Liste de ThreadMember avec la relation member chargée (eager loading)
+        """
+        try:
+            stmt = select(ThreadMember).where(ThreadMember.thread_id == thread_id)
+            
+            if not include_inactive:
+                stmt = stmt.where(
+                    ThreadMember.is_active == True,
+                    ThreadMember.left_at == None
+                )
+            
+            # Chargement eager des membres pour éviter N+1 queries
+            stmt = stmt.options(joinedload(ThreadMember.member))
+            
+            result = await self.db.execute(stmt)
+            thread_members = list(result.scalars().all())
+
+            return CrudResult.crud_success(data=thread_members)
 
         except Exception as e:
             return await RepositoriesUtils.traiter_errors_en_global(
