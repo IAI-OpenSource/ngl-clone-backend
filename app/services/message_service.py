@@ -128,6 +128,7 @@ class MessageService:
         message_repo = await self.__message_repo.insert_message(
             thread_id=thread_id_uuid,
             content=message_data.content,
+            mentioned_member_ids=message_data.mentionned_member_ids
         )
 
         if message_repo.is_error():
@@ -135,10 +136,6 @@ class MessageService:
             return message_repo.to_service_error(service_name=self._service_name)
 
         read_message = ReadMessage.model_validate(message_repo.data)
-
-        await self.__message_cache.set_message_in_cache(
-            message=read_message, ttl=CacheDuration.TWENTY_MINUTES
-        )
 
         await self.__thread_cache.invalid_messages_by_thread_in_cache(
             thread_id=thread_id_uuid

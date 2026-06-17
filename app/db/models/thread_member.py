@@ -33,7 +33,7 @@ FK_THREAD_MEMBERS_THREAD = "fk_thread_members_thread"
 FK_THREAD_MEMBERS_MEMBER = "fk_thread_members_member"
 UQ_THREAD_MEMBERS_THREAD_MEMBER = "uq_thread_members_thread_member"
 IDX_THREAD_MEMBERS_MEMBER = "idx_thread_members_member_active"
-
+IDX_THREAD_MEMBERS_THREAD = "idx_thread_members_thread_active"
 
 class ThreadMember(Base, IntegrityMapperMixin):
     """Représentation de l'association entre un thread et un membre."""
@@ -79,6 +79,11 @@ class ThreadMember(Base, IntegrityMapperMixin):
             "member_id",
             postgresql_where=(is_active == True),
         ),
+        Index(
+            IDX_THREAD_MEMBERS_THREAD,
+            "thread_id",
+            postgresql_where=(is_active == True),
+        )
     )
 
     # Relations

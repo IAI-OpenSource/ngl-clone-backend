@@ -6,7 +6,7 @@ Gère les opérations CRUD sur les messages.
 from dataclasses import dataclass
 from datetime import datetime
 from logging import getLogger
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -18,6 +18,7 @@ from app.db.models.message import Message
 from app.db.models.member import Member
 from app.db.models.message_mention import MessageMention
 from app.db.models.enums.enums import WAStatus
+from app.db.models.thread_member import ThreadMember
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
 
@@ -40,36 +41,101 @@ class MessageRepository:
         is_hidden: bool = False,
         hidden_reason: Optional[str] = None,
         hidden_at: Optional[datetime] = None,
+        mentioned_member_ids: Optional[List[UUID]] = None,
     ) -> DefaultAppCrudResult[Message]:
-        """Fonction pour insérer un message en base de données."""
+        """Fonction pour insérer un message en base de données avec gestion des mentions.
+
+        Args:
+            thread_id: ID du thread
+            content: Contenu du message
+            wa_message_id: ID WhatsApp du message
+            wa_status: Statut WhatsApp
+            wa_forwarded_at: Date de transfert WhatsApp
+            is_hidden: Si le message est caché
+            hidden_reason: Raison du masquage
+            hidden_at: Date du masquage
+            mentioned_member_ids: Liste des IDs des membres mentionnés
+
+        Returns:
+            CrudResult contenant le message créé
+
+        Processus:
+            1. Vérifie que tous les member_ids existent (si fournis)
+            2. Crée le message
+            3. Crée les MessageMention en bulk pour les mentions
+            4. Commit atomique
+        """
         try:
+
+            if mentioned_member_ids:
+                # Vérification en une seule requête avec IN pour optimiser
+                stmt = select(ThreadMember.member_id).where(
+                    ThreadMember.member_id.in_(mentioned_member_ids),
+                    ThreadMember.thread_id == thread_id,
+                )
+                result = await self.db.execute(stmt)
+                existing_member_ids = set(result.scalars().all())
+
+                # Trouver les IDs inexistants
+                has_missings = set(mentioned_member_ids) != existing_member_ids
+                if has_missings:
+                    missings = set(mentioned_member_ids) - existing_member_ids
+                    logger.warning(
+                        f"Tentative de mention de membres inexistants dans le thread {thread_id}: "
+                        f"{missings}"
+                    )
+                    return CrudResult.crud_failure(
+                        RepositoriesUtils.not_found_error(
+                            f"Certains membre mentionnés ne font pas partie de ce Thread : {missings}"
+                        ),
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                valid_mentioned_ids = list(existing_member_ids)
+            else:
+                valid_mentioned_ids = []
+
             message = Message(
                 thread_id=thread_id,
                 content=content,
                 wa_message_id=wa_message_id,
                 hidden_reason=hidden_reason,
             )
-            # Les champs avec init=False doivent être assignés après la création
+
             message.wa_status = wa_status
             message.wa_forwarded_at = wa_forwarded_at
             message.is_hidden = is_hidden
             message.hidden_at = hidden_at
 
             self.db.add(message)
+            await self.db.flush()  # Obtenir l'ID du message pour les mentions
+
+            if valid_mentioned_ids:
+                message_mentions = [
+                    MessageMention(message_id=message.id, member_id=member_id)
+                    for member_id in valid_mentioned_ids
+                ]
+                self.db.add_all(message_mentions)
+
             await self.db.commit()
             await self.db.refresh(message)
 
-            logger.info(f"Message {message.id} ajouté avec succès !")
+            logger.info(
+                f"Message {message.id} ajouté avec succès avec {len(valid_mentioned_ids)} mention(s)!"
+            )
             return CrudResult.crud_success(
                 data=message, status_code=status.HTTP_201_CREATED
             )
 
         except Exception as e:
+            await self.db.rollback()
             return await RepositoriesUtils.traiter_errors_en_global(
                 e, self.db, logger, Message
             )
 
-    async def get_message_by_id(self, message_id: UUID) -> DefaultAppCrudResult[Message]:
+    async def get_message_by_id(
+        self, message_id: UUID
+    ) -> DefaultAppCrudResult[Message]:
         """Fonction pour récupérer un message à partir de son ID."""
         try:
             stmt = select(Message).where(Message.id == message_id)
@@ -210,9 +276,7 @@ class MessageRepository:
             stmt = (
                 select(Message)
                 .where(Message.id == message_id)
-                .options(
-                    joinedload(Message.mentions).joinedload(MessageMention.member)
-                )
+                .options(joinedload(Message.mentions).joinedload(MessageMention.member))
             )
             result = await self.db.execute(stmt)
             message = result.scalar_one_or_none()

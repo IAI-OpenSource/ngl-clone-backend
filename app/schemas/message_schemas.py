@@ -21,7 +21,7 @@ class CreateMessage(BaseModel):
     content: str = Field(description="Contenu du message", min_length=1, max_length=500)
 
     mentionned_member_ids: Optional[List[UUID]] = Field(
-        default_factory=list,
+        default=None,
         description="Liste des IDs des membres mentionnés dans le message"
     )
 

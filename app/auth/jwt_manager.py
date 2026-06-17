@@ -67,7 +67,6 @@ class JWTManager:
             claims_data = jwt.decode(
                 token=token, key=enc_dec_key, algorithms=[ALGORITHM]
             )
-            logger.info("JWT décodé avec succès !")
             return claims_data
 
         except JWTError as err:
