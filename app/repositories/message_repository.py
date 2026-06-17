@@ -11,9 +11,12 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
 from fastapi import status
 
 from app.db.models.message import Message
+from app.db.models.member import Member
+from app.db.models.message_mention import MessageMention
 from app.db.models.enums.enums import WAStatus
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
@@ -186,6 +189,118 @@ class MessageRepository:
 
             logger.info(f"Message {message_id} supprimé avec succès")
             return CrudResult.crud_success(None, status_code=status.HTTP_204_NO_CONTENT)
+
+        except Exception as e:
+            return await RepositoriesUtils.traiter_errors_en_global(
+                e, self.db, logger, Message
+            )
+
+    async def get_message_by_id_with_mentions(
+        self, message_id: UUID
+    ) -> DefaultAppCrudResult[tuple[Message, list[Member]]]:
+        """Récupère un message avec ses membres mentionnés de manière optimisée.
+
+        Utilise joinedload pour charger les mentions et leurs membres en une seule requête.
+        Idéal pour récupérer un message unique avec toutes ses données de mentions.
+
+        Returns:
+            CrudResult contenant un tuple (message, liste_des_membres_mentionnés)
+        """
+        try:
+            stmt = (
+                select(Message)
+                .where(Message.id == message_id)
+                .options(
+                    joinedload(Message.mentions).joinedload(MessageMention.member)
+                )
+            )
+            result = await self.db.execute(stmt)
+            message = result.scalar_one_or_none()
+
+            if message is None:
+                logger.info(f"Message avec ID {message_id} non trouvé")
+                return CrudResult.crud_failure(
+                    RepositoriesUtils.not_found_error("Message inexistant"),
+                    status_code=status.HTTP_404_NOT_FOUND,
+                )
+
+            mentioned_members = [mention.member for mention in message.mentions]
+            return CrudResult.crud_success(data=(message, mentioned_members))
+
+        except Exception as e:
+            return await RepositoriesUtils.traiter_exception_inconnue(
+                e, self.db, logger
+            )
+
+    async def get_messages_by_thread_id_with_mentions(
+        self,
+        thread_id: UUID,
+        is_hidden: Optional[bool] = None,
+    ) -> DefaultAppCrudResult[list[tuple[Message, list[Member]]]]:
+        """Récupère tous les messages d'un thread avec leurs membres mentionnés.
+
+        Utilise selectinload pour éviter le problème cartésien avec plusieurs messages.
+        Idéal pour récupérer une liste de messages avec leurs mentions.
+
+        Args:
+            thread_id: L'ID du thread
+            is_hidden: Filtre optionnel pour les messages cachés
+
+        Returns:
+            CrudResult contenant une liste de tuples (message, liste_des_membres_mentionnés)
+        """
+        try:
+            stmt = select(Message).where(Message.thread_id == thread_id)
+
+            if is_hidden:
+                stmt = stmt.where(Message.is_hidden == True)
+            elif is_hidden is False:
+                stmt = stmt.where(Message.is_hidden == False)
+
+            stmt = stmt.options(
+                selectinload(Message.mentions).selectinload(MessageMention.member)
+            )
+
+            result = await self.db.execute(stmt)
+            messages = list(result.scalars().all())
+
+            # Préparer les données avec membres mentionnés
+            messages_with_mentions = []
+            for msg in messages:
+                mentioned_members = [mention.member for mention in msg.mentions]
+                messages_with_mentions.append((msg, mentioned_members))
+
+            return CrudResult.crud_success(data=messages_with_mentions)
+
+        except Exception as e:
+            return await RepositoriesUtils.traiter_errors_en_global(
+                e, self.db, logger, Message
+            )
+
+    async def get_mentioned_members_by_message(
+        self, message_id: UUID
+    ) -> DefaultAppCrudResult[list[Member]]:
+        """Récupère uniquement les membres mentionnés dans un message.
+
+        Requête directe sur la table de jointure MessageMention.
+        La méthode la plus légère en ressources si vous n'avez besoin que des membres.
+
+        Args:
+            message_id: L'ID du message
+
+        Returns:
+            CrudResult contenant la liste des membres mentionnés
+        """
+        try:
+            stmt = (
+                select(Member)
+                .join(MessageMention, Member.id == MessageMention.member_id)
+                .where(MessageMention.message_id == message_id)
+            )
+            result = await self.db.execute(stmt)
+            mentioned_members = list(result.scalars().all())
+
+            return CrudResult.crud_success(data=mentioned_members)
 
         except Exception as e:
             return await RepositoriesUtils.traiter_errors_en_global(

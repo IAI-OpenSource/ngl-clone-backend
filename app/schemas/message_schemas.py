@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.db.models.enums.enums import WAStatus
 from app.schemas.globals.api_base_response import DefaultAppApiResponse
+from app.schemas.member_schemas import ReadMember
 from app.utils.security_utils import has_too_many_repeated_chars
 
 
@@ -18,6 +19,11 @@ class CreateMessage(BaseModel):
     """Schéma pour la création d'un message."""
 
     content: str = Field(description="Contenu du message", min_length=1, max_length=500)
+
+    mentionned_member_ids: Optional[List[UUID]] = Field(
+        default_factory=list,
+        description="Liste des IDs des membres mentionnés dans le message"
+    )
 
     @classmethod
     def validate_content(cls, value: str) -> str:
@@ -62,6 +68,8 @@ class ReadMessage(BaseModel):
     is_hidden: bool = Field(description="Indique si le message est masqué")
     hidden_reason: Optional[str] = Field(description="Raison du masquage du message")
     created_at: datetime = Field(description="Date de création du message")
+
+    mentionned_members: List[ReadMember] = Field(default_factory=list, description="Liste des membres mentionnés dans le message")
 
     model_config = ConfigDict(from_attributes=True)
 
