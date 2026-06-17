@@ -38,7 +38,6 @@ class CookieManager:
         """function pour lire la valeur d'un cookie"""
 
         try:
-
             cookie_value = self.request.cookies.get(cookie_id)
 
         except Exception:

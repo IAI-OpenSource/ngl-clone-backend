@@ -206,7 +206,9 @@ class CacheWrapper:
                 f"Type de valeur non pris en charge pour save_list_in_cache: {type(value)}. Seules les valeurs de type list sont autorisées."
             )
 
-        serialized_list = self._serialize(value)
+        serialized_list = self._serialize([
+            self._serialize(item) for item in value
+        ])
         await self.__save_in_cache(key, serialized_list, expire_seconds)
 
     async def delete_in_cache(self, key: CacheKey) -> None:
