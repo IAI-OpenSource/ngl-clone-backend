@@ -47,7 +47,7 @@ class Member(Base, IntegrityMapperMixin):
 
     # Identifiants WhatsApp
     wa_jid: Mapped[str] = mapped_column(
-        String(100), nullable=False, unique=True
+        String(100), nullable=False
     )
     wa_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 

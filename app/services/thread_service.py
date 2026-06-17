@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.cache.thread_cache import ThreadCache
 from app.globals.cache_duration import CacheDuration
 from app.repositories.thread_repository import ThreadRepository
-from app.schemas.thread_schemas import ReadThread
+from app.schemas.thread_schemas import CreateThread, ReadThread
 
 from . import ServiceResult, DefaultAppServiceResult
 from ..cache.base.cache_wrapper import CacheWrapper
@@ -99,5 +99,29 @@ class ThreadService:
 
         return ServiceResult.service_success(
             data=read_threads,
+            service_name=self._service_name,
+        )
+
+    async def service_create_thread(
+        self, thread_data: CreateThread
+    ) -> DefaultAppServiceResult[ReadThread]:
+        """Logique métier pour créer un thread."""
+
+        thread_repo = await self.__thread_repo.insert_thread(thread_data=thread_data)
+
+        if thread_repo.is_error():
+            logger.error(f"Erreur: {thread_repo.error}")
+            return thread_repo.to_service_error(service_name=self._service_name)
+
+        read_thread = ReadThread.model_validate(thread_repo.data)
+
+        await self.__thread_cache.set_thread_in_cache(
+            thread=read_thread, ttl=CacheDuration.TWENTY_MINUTES
+        )
+        await self.__thread_cache.invalid_threads_list_in_cache()
+
+        return ServiceResult.service_success(
+            data=read_thread,
+            status_code=thread_repo.status_code,
             service_name=self._service_name,
         )

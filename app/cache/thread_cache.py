@@ -181,7 +181,7 @@ class ThreadCache:
             if cached_list is None:
                 return None
             # Convertir la liste de dicts en liste de ReadThread
-            return [ReadThread.model_validate(item) for item in cached_list]
+            return [ReadThread.model_validate_json(item) for item in cached_list]
         except Exception as e:
             CacheUtils.traiter_exceptions(e, logger)
             return None
@@ -245,7 +245,7 @@ class ThreadCache:
             if cached_list is None:
                 return None
             # Convertir la liste de dicts en liste de ReadMessage
-            return [ReadMessage.model_validate(item) for item in cached_list]
+            return [ReadMessage.model_validate_json(item) for item in cached_list]
         except Exception as e:
             CacheUtils.traiter_exceptions(e, logger)
             return None
@@ -313,7 +313,7 @@ class ThreadCache:
             if cached_list is None:
                 return None
             # Convertir la liste de dicts en liste de ReadMember
-            return [ReadMember.model_validate(item) for item in cached_list]
+            return [ReadMember.model_validate_json(item) for item in cached_list]
         except Exception as e:
             CacheUtils.traiter_exceptions(e, logger)
             return None

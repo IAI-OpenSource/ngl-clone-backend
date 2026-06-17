@@ -10,7 +10,12 @@ from app.db.session import get_db
 from app.globals.api_tags import ApiTags
 from app.globals.businnes_error import AppError
 from app.schemas.globals.api_base_response import ApiBaseResponse
-from app.schemas.thread_schemas import ReadThread, ThreadInfos, ListThreadsInfos
+from app.schemas.thread_schemas import (
+    CreateThread,
+    ReadThread,
+    ThreadInfos,
+    ListThreadsInfos,
+)
 from app.services.thread_service import ThreadService
 from app.schemas.globals.utils_schemas import GlobalStringResponse, StringMessage
 from app.schemas.thread_schemas import ThreadAuthRequest
@@ -33,6 +38,19 @@ def get_auth_thread_service(
     cache: Annotated[CacheWrapper, Depends(get_redis)],
 ) -> AuthThreadService:
     return AuthThreadService(db, cache, response, request)
+
+
+@router.post("/", response_model=ThreadInfos)
+async def create_thread(
+    thread_data: CreateThread,
+    response: Response,
+    thread_service: Annotated[ThreadService, Depends(get_thread_service)],
+) -> ApiBaseResponse[ReadThread, AppError]:
+    """Route pour créer un thread."""
+
+    service_result = await thread_service.service_create_thread(thread_data=thread_data)
+
+    return service_result.to_HTTP_api_base_response(reponse=response)
 
 
 @router.get("/", response_model=ListThreadsInfos)
@@ -73,8 +91,8 @@ async def get_thread_by_id(
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.get("/{thread_id}/auth", response_model=GlobalStringResponse, tags=[ApiTags.AUTHENTIFICATION])
-async def get_thread_by_id(
+@router.post("/{thread_id}/auth", response_model=GlobalStringResponse, tags=[ApiTags.AUTHENTIFICATION])
+async def connect_to_a_thread(
     thread_id: Annotated[
         UUID, Path(..., description="ID du thread auquel on ve se connecter")
     ],

@@ -16,6 +16,8 @@ from fastapi import status
 from app.db.models.thread import Thread
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
+from app.schemas.thread_schemas import CreateThread
+from app.utils.security_utils import hasher_password
 logger = getLogger(__name__)
 
 
@@ -26,29 +28,25 @@ class ThreadRepository:
     db: AsyncSession
 
     async def insert_thread(
-        self,
-        name: str,
-        slug: str,
-        wa_group_jid: str,
-        password_hash: str,
-        description: Optional[str] = None,
-        wa_group_name: Optional[str] = None,
+        self, thread_data: CreateThread
     ) -> DefaultAppCrudResult[Thread]:
         """Fonction pour insérer un thread en base de données."""
         try:
             thread = Thread(
-                name=name,
-                slug=slug,
-                description=description,
-                wa_group_jid=wa_group_jid,
-                wa_group_name=wa_group_name,
-                password_hash=password_hash,
+                name=thread_data.name,
+                slug=thread_data.slug,
+                description=thread_data.description,
+                wa_group_jid=thread_data.wa_group_jid,
+                wa_group_name=thread_data.wa_group_name,
             )
+            if thread_data.password is not None:
+                thread.password_hash = hasher_password(thread_data.password)
+
             self.db.add(thread)
             await self.db.commit()
             await self.db.refresh(thread)
 
-            logger.info(f"Thread {slug} ajouté avec succès !")
+            logger.info(f"Thread {thread_data.slug} ajouté avec succès !")
             return CrudResult.crud_success(
                 data=thread, status_code=status.HTTP_201_CREATED
             )

@@ -47,11 +47,11 @@ async def create_message(
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.get("/thread/{thread_id}", response_model=ListMessagesInfos)
+@router.get("/thread/", response_model=ListMessagesInfos)
 async def get_messages_by_thread(
-    thread_id: Annotated[UUID, Path(..., description="ID du thread dont les messages doivent être récupérés")],
     response: Response,
     message_service: Annotated[MessageService, Depends(get_message_service)],
+    thread: Annotated[ThreadAuthPayload, Depends(get_connected_thread)],
     is_hidden: Annotated[
         Optional[bool],
         Query(description="Filtrer par statut de masquage du message"),
@@ -60,7 +60,7 @@ async def get_messages_by_thread(
     """Route pour récupérer les messages d'un thread."""
 
     service_result = await message_service.service_get_messages_by_thread_id(
-        thread_id=thread_id,
+        thread_id=UUID(thread.thread_id),
         is_hidden=is_hidden,
     )
 

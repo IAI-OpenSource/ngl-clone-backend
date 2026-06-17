@@ -48,13 +48,13 @@ class Thread(Base, IntegrityMapperMixin):
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     slug: Mapped[str] = mapped_column(
-        String(50), nullable=False, unique=True
+        String(50), nullable=False
     )
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Informations WhatsApp
     wa_group_jid: Mapped[str] = mapped_column(
-        String(100), nullable=False, unique=True
+        String(100), nullable=False
     )
     wa_group_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
