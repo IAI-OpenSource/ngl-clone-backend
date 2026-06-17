@@ -51,14 +51,14 @@ class ThreadService:
             return ServiceResult.service_failure(error=AppError(
                 error_message="pffffffffffff",
                 error_type=AppErrorType.UNKNOWN_ERROR
-            ))
+            ), status_code=400)
 
         if usable_thread.has_password and str(usable_thread.id) != user_token.thread_id:
             logger.error(f"Thread {usable_thread.id} a un mot de passe et l'utilisateur n'a pas le bon token.")
             return ServiceResult.service_failure(error=AppError(
                 error_message="Tu ne peux pas communiquer avec ce thread poto, connecte toii au thread d'bord",
                 error_type=AppErrorType.LOCKED_CONTENT
-            ))
+            ), status_code=400)
         return ServiceResult.service_success(data=usable_thread)
 
     async def service_find_thread_by_id(
