@@ -22,6 +22,7 @@ from app.schemas.thread_schemas import ThreadAuthRequest
 from app.services.auth_thread_service import AuthThreadService
 from app.schemas.thread_schemas import ThreadAuthPayload
 from app.auth.dependencies import get_connected_thread
+from app.schemas.globals.api_utils_schemas import ApiUtilsSchemas
 
 router = APIRouter(prefix="/threads", tags=[ApiTags.THREADS])
 
@@ -67,7 +68,11 @@ async def get_all_threads(
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.get("/actual", response_model=ThreadInfos, tags=[ApiTags.AUTHENTIFICATION], summary="Obtenir le thread actuellement connecté")
+@router.get(
+    "/actual", response_model=ThreadInfos,
+    tags=[ApiTags.AUTHENTIFICATION], summary="Obtenir le thread actuellement connecté",
+    responses=ApiUtilsSchemas.AUTH_REQUIRED_RESPONSES
+)
 async def get_connected_thread(
         response: Response,
         thread: Annotated[ThreadAuthPayload, Depends(get_connected_thread)],

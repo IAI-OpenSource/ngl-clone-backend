@@ -19,6 +19,7 @@ from app.schemas.message_schemas import (
 from app.services.message_service import MessageService
 from app.schemas.thread_schemas import ThreadAuthPayload
 from app.auth.dependencies import get_connected_thread
+from app.schemas.globals.api_utils_schemas import ApiUtilsSchemas
 
 router = APIRouter(prefix="/messages", tags=[ApiTags.MESSAGES])
 
@@ -30,7 +31,9 @@ def get_message_service(
     return MessageService(db, cache)
 
 
-@router.post("/", response_model=MessageInfos, summary="Ajouter un message au thread connecté")
+@router.post(
+    "/", response_model=MessageInfos, summary="Ajouter un message au thread connecté"
+)
 async def create_message(
     message_data: CreateMessage,
     response: Response,
@@ -40,14 +43,18 @@ async def create_message(
     """Route pour ajouter un message à un thread."""
 
     service_result = await message_service.service_create_message(
-        message_data=message_data,
-        thread_id=thread.thread_id
+        message_data=message_data, thread_id=thread.thread_id
     )
 
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.get("/thread/", response_model=ListMessagesInfos, summary="Lister les messages du thread auquel on est connecté")
+@router.get(
+    "/thread/",
+    response_model=ListMessagesInfos,
+    responses=ApiUtilsSchemas.AUTH_REQUIRED_RESPONSES,
+    summary="Lister les messages du thread auquel on est connecté",
+)
 async def get_thread_messages(
     response: Response,
     message_service: Annotated[MessageService, Depends(get_message_service)],
@@ -62,7 +69,12 @@ async def get_thread_messages(
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.get("/{message_id}", response_model=MessageInfos, summary="Récupérer un message par son ID")
+@router.get(
+    "/{message_id}",
+    response_model=MessageInfos,
+    summary="Récupérer un message par son ID",
+    responses=ApiUtilsSchemas.AUTH_REQUIRED_RESPONSES,
+)
 async def get_message_by_id(
     message_id: Annotated[UUID, Path(..., description="ID du message à récupérer")],
     response: Response,
@@ -72,8 +84,7 @@ async def get_message_by_id(
     """Route pour récupérer un message par son ID."""
 
     service_result = await message_service.service_find_message_by_id(
-        message_id=message_id,
-        connected_thread=thread
+        message_id=message_id, connected_thread=thread
     )
 
     return service_result.to_HTTP_api_base_response(reponse=response)
