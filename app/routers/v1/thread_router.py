@@ -42,7 +42,7 @@ def get_auth_thread_service(
     return AuthThreadService(db, cache, response, request)
 
 
-@router.post("/", response_model=ThreadInfos)
+@router.post("/", response_model=ThreadInfos, summary="Créer un nouveau thread")
 async def create_thread(
     thread_data: CreateThread,
     response: Response,
@@ -55,7 +55,7 @@ async def create_thread(
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.get("/", response_model=ListThreadsInfos)
+@router.get("/", response_model=ListThreadsInfos, summary="Lister tous les threads")
 async def get_all_threads(
     response: Response,
     thread_service: Annotated[ThreadService, Depends(get_thread_service)],
@@ -67,7 +67,7 @@ async def get_all_threads(
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.get("/actual", response_model=ThreadInfos, tags=[ApiTags.AUTHENTIFICATION], )
+@router.get("/actual", response_model=ThreadInfos, tags=[ApiTags.AUTHENTIFICATION], summary="Obtenir le thread actuellement connecté")
 async def get_connected_thread(
         response: Response,
         thread: Annotated[ThreadAuthPayload, Depends(get_connected_thread)],
@@ -83,7 +83,7 @@ async def get_connected_thread(
 
     return service_result.to_HTTP_api_base_response(reponse=response)
 
-@router.get("/slug/{slug}", response_model=ThreadInfos)
+@router.get("/slug/{slug}", response_model=ThreadInfos, summary="Récupérer un thread par son slug")
 async def get_thread_by_slug(
         slug: Annotated[str, Path(..., description="Le slug du thread à récupérer")],
         response: Response,
@@ -96,7 +96,7 @@ async def get_thread_by_slug(
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.post("/{thread_id}/auth", response_model=GlobalStringResponse, tags=[ApiTags.AUTHENTIFICATION])
+@router.post("/{thread_id}/auth", response_model=GlobalStringResponse, tags=[ApiTags.AUTHENTIFICATION], summary="Se connecter à un thread")
 async def connect_to_a_thread(
     thread_id: Annotated[
         UUID, Path(..., description="ID du thread auquel on ve se connecter")
@@ -113,7 +113,7 @@ async def connect_to_a_thread(
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.get("/{thread_id}", response_model=ThreadInfos)
+@router.get("/{thread_id}", response_model=ThreadInfos, summary="Récupérer un thread par son ID")
 async def get_thread_by_id(
     thread_id: Annotated[UUID, Path(..., description="ID du thread à récupérer")],
     response: Response,

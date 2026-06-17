@@ -30,7 +30,7 @@ def get_message_service(
     return MessageService(db, cache)
 
 
-@router.post("/", response_model=MessageInfos)
+@router.post("/", response_model=MessageInfos, summary="Ajouter un message au thread connecté")
 async def create_message(
     message_data: CreateMessage,
     response: Response,
@@ -47,7 +47,7 @@ async def create_message(
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.get("/thread/", response_model=ListMessagesInfos)
+@router.get("/thread/", response_model=ListMessagesInfos, summary="Lister les messages du thread auquel on est connecté")
 async def get_thread_messages(
     response: Response,
     message_service: Annotated[MessageService, Depends(get_message_service)],
@@ -62,7 +62,7 @@ async def get_thread_messages(
     return service_result.to_HTTP_api_base_response(reponse=response)
 
 
-@router.get("/{message_id}", response_model=MessageInfos)
+@router.get("/{message_id}", response_model=MessageInfos, summary="Récupérer un message par son ID")
 async def get_message_by_id(
     message_id: Annotated[UUID, Path(..., description="ID du message à récupérer")],
     response: Response,
