@@ -7,6 +7,9 @@ from app.cache.thread_cache import ThreadCache
 from app.globals.cache_duration import CacheDuration
 from app.repositories.thread_repository import ThreadRepository
 from app.schemas.thread_schemas import CreateThread, ReadThread
+from app.db.models.thread import Thread
+from app.globals.businnes_error import AppError, AppErrorType
+from app.schemas.thread_schemas import ThreadAuthPayload
 
 from . import ServiceResult, DefaultAppServiceResult
 from ..cache.base.cache_wrapper import CacheWrapper
@@ -22,6 +25,41 @@ class ThreadService:
         self.__thread_cache = ThreadCache(cache)
         self.__thread_repo = ThreadRepository(self.__db)
         self._service_name = ServicesNames.THREAD_SERVICE
+
+    @staticmethod
+    def _build_read_thread_schemas(thread_bd_data : Thread) -> ReadThread:
+        th = ReadThread.model_validate(thread_bd_data)
+        if thread_bd_data.password_hash is not None:
+            logger.info(thread_bd_data.password_hash)
+            th.has_password = True
+
+        return th
+
+    async def verify_can_interract_with_thread(self, thread: ReadThread | Thread | UUID, user_token: ThreadAuthPayload) -> DefaultAppServiceResult[ReadThread]:
+        usable_thread: ReadThread
+        if isinstance(thread, UUID):
+            read_request = await self.service_find_thread_by_id(thread_id=thread)
+            if read_request.is_error():
+                return read_request
+            usable_thread = read_request.data
+        elif isinstance(thread, Thread):
+            usable_thread = self._build_read_thread_schemas(thread)
+        elif isinstance(thread, ReadThread):
+            usable_thread = thread
+        else:
+            logger.error(f"Type de thread non supporté: {type(thread)}")
+            return ServiceResult.service_failure(error=AppError(
+                error_message="pffffffffffff",
+                error_type=AppErrorType.UNKNOWN_ERROR
+            ))
+
+        if usable_thread.has_password and str(usable_thread.id) != user_token.thread_id:
+            logger.error(f"Thread {usable_thread.id} a un mot de passe et l'utilisateur n'a pas le bon token.")
+            return ServiceResult.service_failure(error=AppError(
+                error_message="Tu ne peux pas communiquer avec ce thread poto, connecte toii au thread d'bord",
+                error_type=AppErrorType.LOCKED_CONTENT
+            ))
+        return ServiceResult.service_success(data=usable_thread)
 
     async def service_find_thread_by_id(
         self, thread_id: UUID
@@ -41,7 +79,7 @@ class ThreadService:
             logger.error(f"Erreur: {thread_repo.error}")
             return thread_repo.to_service_error(service_name=self._service_name)
 
-        read_thread = ReadThread.model_validate(thread_repo.data)
+        read_thread = self._build_read_thread_schemas(thread_repo.data)
 
         await self.__thread_cache.set_thread_in_cache(
             thread=read_thread, ttl=CacheDuration.TWENTY_MINUTES
@@ -63,7 +101,7 @@ class ThreadService:
             logger.error(f"Erreur: {thread_repo.error}")
             return thread_repo.to_service_error(service_name=self._service_name)
 
-        read_thread = ReadThread.model_validate(thread_repo.data)
+        read_thread = self._build_read_thread_schemas(thread_repo.data)
 
         await self.__thread_cache.set_thread_in_cache(
             thread=read_thread, ttl=CacheDuration.TWENTY_MINUTES
@@ -91,7 +129,7 @@ class ThreadService:
             logger.error(f"Erreur: {thread_repo.error}")
             return thread_repo.to_service_error(service_name=self._service_name)
 
-        read_threads = [ReadThread.model_validate(thread) for thread in thread_repo.data]
+        read_threads = [self._build_read_thread_schemas(thread) for thread in thread_repo.data]
 
         await self.__thread_cache.set_threads_list_in_cache(
             threads=read_threads, ttl=CacheDuration.TWENTY_MINUTES
@@ -113,7 +151,7 @@ class ThreadService:
             logger.error(f"Erreur: {thread_repo.error}")
             return thread_repo.to_service_error(service_name=self._service_name)
 
-        read_thread = ReadThread.model_validate(thread_repo.data)
+        read_thread = self._build_read_thread_schemas(thread_repo.data)
 
         await self.__thread_cache.set_thread_in_cache(
             thread=read_thread, ttl=CacheDuration.TWENTY_MINUTES

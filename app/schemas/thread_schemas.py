@@ -58,6 +58,9 @@ class ReadThread(BaseModel):
     last_wa_sync_at: Optional[datetime] = Field(None, description="Dernière synchronisation WhatsApp")
     created_at: datetime = Field(description="Date de création du thread")
     updated_at: datetime = Field(description="Date de dernière mise à jour du thread")
+    has_password: bool =Field(default=False, description="Indique si le thread est protégé par un mot de passe, "
+                                                        "donc si c'est True tu affiche une dialog pour rentrer le mot "
+                                                        "de passe, sinon tu peux directement se connecter au thread")
 
     model_config = ConfigDict(from_attributes=True)
 

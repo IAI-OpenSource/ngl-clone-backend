@@ -1,7 +1,7 @@
-from typing import Annotated, Optional
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Response
 from fastapi.params import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,20 +48,15 @@ async def create_message(
 
 
 @router.get("/thread/", response_model=ListMessagesInfos)
-async def get_messages_by_thread(
+async def get_thread_messages(
     response: Response,
     message_service: Annotated[MessageService, Depends(get_message_service)],
     thread: Annotated[ThreadAuthPayload, Depends(get_connected_thread)],
-    is_hidden: Annotated[
-        Optional[bool],
-        Query(description="Filtrer par statut de masquage du message"),
-    ] = None,
 ) -> ApiBaseResponse[list[ReadMessage], AppError]:
-    """Route pour récupérer les messages d'un thread."""
+    """Route pour récupérer les messages du thread auquel on est actuellemnt connecté"""
 
     service_result = await message_service.service_get_messages_by_thread_id(
-        thread_id=UUID(thread.thread_id),
-        is_hidden=is_hidden,
+        thread_id=UUID(thread.thread_id)
     )
 
     return service_result.to_HTTP_api_base_response(reponse=response)
@@ -72,11 +67,13 @@ async def get_message_by_id(
     message_id: Annotated[UUID, Path(..., description="ID du message à récupérer")],
     response: Response,
     message_service: Annotated[MessageService, Depends(get_message_service)],
+    thread: Annotated[ThreadAuthPayload, Depends(get_connected_thread)],
 ) -> ApiBaseResponse[ReadMessage, AppError]:
     """Route pour récupérer un message par son ID."""
 
     service_result = await message_service.service_find_message_by_id(
-        message_id=message_id
+        message_id=message_id,
+        connected_thread=thread
     )
 
     return service_result.to_HTTP_api_base_response(reponse=response)
