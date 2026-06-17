@@ -32,7 +32,7 @@ def get_message_service(
 
 
 @router.post(
-    "/", response_model=MessageInfos, summary="Ajouter un message au thread connecté"
+    "/", response_model=MessageInfos, summary="Ajouter un message au thread connecté", status_code=201
 )
 async def create_message(
     message_data: CreateMessage,
