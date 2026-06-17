@@ -13,7 +13,10 @@ from app.schemas.thread_schemas import ThreadAuthPayload
 from . import ServiceResult, DefaultAppServiceResult
 from .thread_service import ThreadService
 from ..cache.base.cache_wrapper import CacheWrapper
+from ..db.models.member import Member
+from ..db.models.message import Message
 from ..globals.services_names import ServicesNames
+from ..schemas.member_schemas import ReadMember
 
 logger = getLogger(__name__)
 
@@ -27,6 +30,13 @@ class MessageService:
         self.__thread_cache = ThreadCache(cache)
         self.__message_repo = MessageRepository(self.__db)
         self._service_name = ServicesNames.MESSAGE_SERVICE
+
+    @staticmethod
+    def _format_message_with_mentions(message_data: tuple[Message, list[Member]]) -> ReadMessage:
+        """Formate un message avec ses mentions pour l'affichage."""
+        read_message = ReadMessage.model_validate(message_data[0])
+        read_message.mentionned_members = [ReadMember.model_validate(m) for m in message_data[1]]
+        return read_message
 
     async def service_find_message_by_id(
         self, message_id: UUID, connected_thread: ThreadAuthPayload
@@ -47,7 +57,7 @@ class MessageService:
                 return ServiceResult.service_failure(error=verif.error)
             return ServiceResult.service_success(data=message_from_cache)
 
-        message_repo = await self.__message_repo.get_message_by_id(
+        message_repo = await self.__message_repo.get_message_by_id_with_mentions(
             message_id=message_id
         )
 
@@ -55,7 +65,7 @@ class MessageService:
             logger.error(f"Erreur: {message_repo.error}")
             return message_repo.to_service_error(service_name=self._service_name)
 
-        read_message = ReadMessage.model_validate(message_repo.data)
+        read_message = self._format_message_with_mentions(message_repo.data)
 
         await self.__message_cache.set_message_in_cache(
             message=read_message, ttl=CacheDuration.TWENTY_MINUTES
@@ -86,7 +96,7 @@ class MessageService:
         if messages_from_cache is not None:
             return ServiceResult.service_success(data=messages_from_cache)
 
-        messages_repo = await self.__message_repo.get_messages_by_thread_id(
+        messages_repo = await self.__message_repo.get_messages_by_thread_id_with_mentions(
             thread_id=thread_id,
         )
 
@@ -95,7 +105,7 @@ class MessageService:
             return messages_repo.to_service_error(service_name=self._service_name)
 
         read_messages = [
-            ReadMessage.model_validate(message) for message in messages_repo.data
+            self._format_message_with_mentions(message) for message in messages_repo.data
         ]
 
         await self.__thread_cache.set_messages_by_thread_in_cache(
@@ -118,6 +128,7 @@ class MessageService:
         message_repo = await self.__message_repo.insert_message(
             thread_id=thread_id_uuid,
             content=message_data.content,
+            mentioned_member_ids=message_data.mentionned_member_ids
         )
 
         if message_repo.is_error():
@@ -125,10 +136,6 @@ class MessageService:
             return message_repo.to_service_error(service_name=self._service_name)
 
         read_message = ReadMessage.model_validate(message_repo.data)
-
-        await self.__message_cache.set_message_in_cache(
-            message=read_message, ttl=CacheDuration.TWENTY_MINUTES
-        )
 
         await self.__thread_cache.invalid_messages_by_thread_in_cache(
             thread_id=thread_id_uuid
