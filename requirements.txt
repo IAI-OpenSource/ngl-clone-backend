@@ -14,3 +14,4 @@ redis[asyncio,hiredis]     # Redis client with support for asyncio and the hired
 alembic-postgresql-enum    # Optional dependency for Alembic to support PostgreSQL ENUM types
 celery
 celery-types
+httpx

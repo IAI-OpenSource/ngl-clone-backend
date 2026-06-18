@@ -57,6 +57,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      evolution-api:
+        condition: service_healthy
 
 
 
