@@ -27,6 +27,9 @@ from app.schemas.globals.api_utils_schemas import ApiUtilsSchemas
 from app.handlers.webhook_handler import WebhookHandler, get_webhook_handler
 from app.schemas.webhook_schemas import WebhookResponse
 
+# Import pour enregistrer les commandes WhatsApp (effet de bord)
+from app.whatsapp import handlers  # noqa: F401
+
 router = APIRouter(prefix="/threads", tags=[ApiTags.THREADS])
 
 
@@ -97,27 +100,15 @@ async def get_connected_thread_info(
 
 @router.post(
     "/webhook",
-    response_model=WebhookResponse,
+    response_model=None,
     summary="Webhook pour recevoir les événements WhatsApp",
-    description="""
-    Endpoint pour recevoir les événements de l'API Evolution WhatsApp.
-    
-    **Événements supportés :**
-    - `JoinedGroup` : Déclenché quand un bot rejoint ou est ajouté à un groupe
-    - `Message` : Déclenché quand un message est envoyé dans un groupe
-    
-    **Payload attendu :**
-    - Pour JoinedGroup: Voir le schéma `JoinedGroupEvent`
-    - Pour Message: Voir le schéma `MessageEvent`
-    
-    **Réponse :**
-    Retourne un objet `WebhookResponse` avec le statut du traitement.
-    """
+    include_in_schema=False,
+    status_code=204
 )
 async def webhook(
     request: Request,
-    handler: WebhookHandler = Depends(get_webhook_handler)
-) -> WebhookResponse:
+    handler: Annotated[WebhookHandler, Depends(get_webhook_handler)]
+):
     """
     Traite les événements webhook WhatsApp.
     
@@ -125,12 +116,10 @@ async def webhook(
     et les traite via le WebhookHandler.
     """
     # Lire le body de la requête
-    payload = await request.json()
-    
-    # Traiter via le handler
-    response = await handler.handle_webhook(payload)
-    
-    return response
+    try:
+        await handler.handle_webhook(request)
+    except Exception as e:
+        print(f"Erreur lors du traitement du webhook: {e}")
 
 @router.get(
     "/actual/members",

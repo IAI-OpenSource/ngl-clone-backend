@@ -21,6 +21,11 @@ from typing import Any, ClassVar, Self
 import httpx
 from pydantic import BaseModel, Field
 
+from app.core.config import (
+    EVO_GLOBAL_API_URL,
+    EVO_ACTIVE_INSTANCE_API_KEY,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -414,7 +419,7 @@ class EvolutionAPIClient:
 
         body = response.json()
         # Evolution Go enveloppe dans { "data": {...}, "message": "success" }
-        return body.get("data", body)
+        return body
 
     # ── Instance / Connexion ──────────────────────────────────────────────────
 
@@ -424,19 +429,36 @@ class EvolutionAPIClient:
         GET /instance/status → { Connected, LoggedIn, Name }
         """
         data = await self._request("GET", "instance/status")
-        return WAInstanceStatus.model_validate(data)
+        return WAInstanceStatus.model_validate(data.get("data"))
 
     async def is_ready(self) -> bool:
         """True si l'instance est connectée ET loggée dans WhatsApp."""
         status = await self.get_status()
         return status.is_ready
 
-    async def connect(self) -> dict[str, Any]:
+    async def connect(self) -> bool:
         """
         Démarre la connexion et retourne le QR code ou le statut.
         GET /instance/connect
         """
-        return await self._request("GET", "instance/connect")
+        payload = {
+          "immediate": True,
+          "subscribe": [
+            "GROUP",
+          ],
+          "webhookUrl": "http://ngl_clone_api:8000/v1/threads/webhook"
+        }
+
+        res = await self._request("POST", "instance/connect", json=payload)
+        if isinstance(res, dict):
+            has_success = res.get("message", "") == "success"
+            if has_success:
+                logger.info("Instance connectée avec succès.")
+            else:
+                logger.warning("Instance non connectée, mais message inattendu : %s", res)
+            return has_success
+        logger.error("Réponse inattendue de /instance/connect : %s", res)
+        return False
 
     async def logout(self) -> None:
         """Déconnecte l'instance (logout + suppression de session WA)."""
@@ -476,6 +498,7 @@ class EvolutionAPIClient:
             "group/participants",
             params={"groupJid": group_jid},
         )
+        data = data.get("data")
         raw: list[dict[str, Any]] = (
             data.get("participants", data) if isinstance(data, dict) else data
         )
@@ -564,7 +587,9 @@ class EvolutionAPIClient:
         await asyncio.sleep(delay if delay is not None else self._send_delay)
         payload: dict[str, Any] = {
             "number": number,
-            "text":   text,
+            "text": text,
+            "delay": 0,
+            "formatJid": True,
         }
         if mention_all:
             payload["mentionAll"] = True
@@ -572,7 +597,7 @@ class EvolutionAPIClient:
             payload["mentionedJid"] = ",".join(mention_jids)
 
         data = await self._request("POST", "send/text", json=payload)
-        sent = WASentMessage.model_validate(data)
+        sent = WASentMessage.model_validate(data.get("data"))
         logger.info("Text → %s | id=%s", number, sent.message_id)
         return sent
 
@@ -847,9 +872,17 @@ class EvolutionAPIClient:
         return WAGroupParticipantUpdate.model_validate(payload)
 
 async def initialize_evolution_client():
-    async with EvolutionAPIClient.initialize(
-        base_url="http://localhost:8080",
-        api_key="your-key",
-    ) as client:
-        if not await client.is_ready():
-            raise RuntimeError("WhatsApp non connecté")
+    """
+    Initialise le singleton EvolutionAPIClient et connecte l'instance WhatsApp.
+    
+    Note: Ne pas utiliser async with ici car il fermerait le client immédiatement.
+    Le client doit rester ouvert pour traiter les requêtes webhook.
+    """
+    client = EvolutionAPIClient.initialize(
+        base_url=EVO_GLOBAL_API_URL,
+        api_key=EVO_ACTIVE_INSTANCE_API_KEY,
+    )
+    if not await client.connect():
+        raise RuntimeError("WhatsApp non connecté")
+    logger.info("WhatsApp connecté avec succès")
+    return client
