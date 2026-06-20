@@ -46,13 +46,13 @@ async def _generate_image(
 
     length = len(text)
     if length < 100:
-        font_size = 44
+        font_size = 50
     elif length < 220:
-        font_size = 36
+        font_size = 40
     elif length < 350:
-        font_size = 28
+        font_size = 32
     else:
-        font_size = 22
+        font_size = 25
 
     image_bytes = await generator.render(
         template_name="v1_template.html",
