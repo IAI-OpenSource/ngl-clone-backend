@@ -53,7 +53,7 @@ class Whathsappclientwrapper:
             # Vérifier si l'utilisateur est admin dans le groupe
             sender_jid = event.data.Info.Sender
             is_user_admin = any(
-                p.JID == sender_jid and (p.IsAdmin or p.IsSuperAdmin)
+                p.PhoneNumber == sender_jid and (p.IsAdmin or p.IsSuperAdmin)
                 for p in event.data.groupData.Participants
             )
             if not is_user_admin:

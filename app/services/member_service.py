@@ -172,3 +172,36 @@ class MemberService:
             status_code=member_repo.status_code,
             service_name=self._service_name,
         )
+
+    async def service_create_members_bulk(
+        self, members_data: list[CreateMember]
+    ) -> DefaultAppServiceResult[list[ReadMember]]:
+        """Logique métier pour créer plusieurs membres en une seule opération.
+        
+        Args:
+            members_data: Liste de dictionnaires contenant les données des membres.
+                         Chaque dictionnaire doit contenir au moins 'wa_jid'.
+                         Peut contenir: wa_jid, wa_name, display_name, phone_number, avatar_url.
+        
+        Returns:
+            ServiceResult contenant la liste des membres créés.
+        """
+        member_repo = await self.__member_repo.insert_many_members(members_data=members_data)
+        
+        if member_repo.is_error():
+            logger.error(f"Erreur: {member_repo.error}")
+            return member_repo.to_service_error(service_name=self._service_name)
+        
+        read_members = [ReadMember.model_validate(member) for member in member_repo.data]
+        
+        # Mettre en cache chaque membre individuellement
+        for read_member in read_members:
+            await self.__member_cache.set_member_in_cache(
+                member=read_member, ttl=CacheDuration.TWENTY_MINUTES
+            )
+        
+        return ServiceResult.service_success(
+            data=read_members,
+            status_code=member_repo.status_code,
+            service_name=self._service_name,
+        )

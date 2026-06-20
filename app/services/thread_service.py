@@ -34,7 +34,6 @@ class ThreadService:
     def _build_read_thread_schemas(thread_bd_data : Thread) -> ReadThread:
         th = ReadThread.model_validate(thread_bd_data)
         if thread_bd_data.password_hash is not None:
-            logger.info(thread_bd_data.password_hash)
             th.has_password = True
 
         return th

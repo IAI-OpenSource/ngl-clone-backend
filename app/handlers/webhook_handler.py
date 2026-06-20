@@ -10,6 +10,7 @@ import json
 import logging
 from datetime import datetime, timezone
 
+from app.integrations.evolution_client import EvolutionAPIClient
 from app.schemas.webhook_schemas import (
     JoinedGroupEvent,
     MessageEvent,
@@ -60,16 +61,17 @@ class WebhookHandler:
             # Vérification ultra-optimisée : lire le body brut et vérifier l'event type
             # avant de faire un parsing complet
             body = await req.body()
-            
+
             # Vérifier rapidement si c'est un événement géré sans parser tout le JSON
             if b'"event":"Message"' not in body and b'"event":"JoinedGroup"' not in body:
                 # Événement non géré, ignorer sans parsing complet
                 logger.debug("Événement non géré détecté, ignoré sans parsing")
                 return
-            
+
             # Parser uniquement si c'est un événement géré
             payload = json.loads(body)
-            logger.debug(payload)
+            logger.info(f"Full Raw Payload : {json.dumps(payload, indent=2)})")
+
             event = parse_webhook_event(payload)
 
             # Traiter selon le type
@@ -83,15 +85,13 @@ class WebhookHandler:
             duration = (datetime.now(timezone.utc) - start_time).total_seconds()
             logger.info(f"Webhook traité en {duration:.3f}s - Type: {event.event.value}")
 
-
         except Exception as e:
             logger.error(f"Erreur lors du traitement du webhook: {str(e)}", exc_info=True)
 
-
+    @staticmethod
     async def _handle_joined_group(
-        self,
         event: JoinedGroupEvent
-    ) -> WebhookResponse:
+    ) -> None:
         """
         Traite un événement JoinedGroup.
         
@@ -110,47 +110,24 @@ class WebhookHandler:
 
         group_data = event.data
 
-        # Extraire les informations importantes
-        group_info = {
-            "jid": group_data.JID,
-            "name": group_data.Name,
-            "owner_jid": group_data.OwnerJID,
-            "owner_phone": group_data.OwnerPN,
-            "participant_count": group_data.ParticipantCount,
-            "created_at": group_data.GroupCreated,
-            "is_locked": group_data.IsLocked,
-            "is_announce": group_data.IsAnnounce,
-        }
+        # Envoyer un message de présentation dans le groupe
+        try:
+            evo_client = EvolutionAPIClient.get_instance()
+            await evo_client.send_text(
+                number=group_data.JID,
+                text=(
+                    "👋 Kpakpara raté à tous !\n\n"
+                    "Je suis votre assistant WhatsApp. 🤖\n\n"
+                    "Pour associer ce groupe à un thread et commencer à gérer vos messages, "
+                    "utilisez la commande :\n\n"
+                    "🔗 */map_group*\n\n"
+                    "C'est tout !"
+                )
+            )
+            logger.info(f"Message de présentation envoyé au groupe {group_data.JID}")
+        except Exception as e:
+            logger.error(f"Échec de l'envoi du message de présentation: {e}")
 
-        participants_info = [
-            {
-                "jid": p.JID,
-                "phone": p.PhoneNumber,
-                "is_admin": p.IsAdmin,
-                "is_super_admin": p.IsSuperAdmin,
-            }
-            for p in group_data.Participants
-        ]
-
-        logger.info(f"Groupe: {group_info}")
-        logger.info(f"Participants ({len(participants_info)}): {participants_info}")
-
-        # Logique métier à implémenter ici
-        # Exemples :
-        # - Mettre à jour la base de données avec les infos du groupe
-        # - Envoyer une notification
-        # - Synchroniser les membres du groupe
-
-        # TODO: Ajouter la logique métier spécifique
-        # await self._sync_group_to_database(group_data)
-        # await self._notify_group_join(event)
-
-        return WebhookResponse(
-            success=True,
-            message=f"JoinedGroup traité - Groupe: {group_data.Name} ({group_data.JID})",
-            event_type=WebhookEventType.JOINED_GROUP.value,
-            processed_at=datetime.now(timezone.utc)
-        )
     @staticmethod
     async def _handle_message(
         event: MessageEvent
@@ -168,6 +145,8 @@ class WebhookHandler:
         """
         logger.info(f"Traitement de Message dans {event.data.Info.Chat}")
         msg = event.data.Message.conversation
+        logger.info(f"Message : {msg}")
+        logger.info(f"Full Payload : {event.model_dump_json(indent=2)}")
         is_command = msg and msg.startswith("/")
         if is_command:
             await client_command_handler.process(event)

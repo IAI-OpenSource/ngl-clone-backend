@@ -223,22 +223,6 @@ class EvolutionAPIClient:
 
     ─── Singleton (usage recommandé) ───────────────────────────────────────
 
-    # 1. Initialisation unique au démarrage (FastAPI lifespan)
-        from contextlib import asynccontextmanager
-        from fastapi import FastAPI
-
-        @asynccontextmanager
-        async def lifespan(app: FastAPI):
-            async with EvolutionAPIClient.initialize(
-                base_url="http://localhost:8080",
-                api_key="your-key",
-            ) as client:
-                if not await client.is_ready():
-                    raise RuntimeError("WhatsApp non connecté")
-                yield
-
-        app = FastAPI(lifespan=lifespan)
-
     # 2. Accès depuis n'importe où dans le backend
         client = EvolutionAPIClient.get_instance()
         await client.send_text("120363xxx@g.us", "Hello!")
