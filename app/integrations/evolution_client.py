@@ -568,7 +568,9 @@ class EvolutionAPIClient:
             mention_all:  Mentionne tous les membres du groupe (@everyone)
             mention_jids: JIDs spécifiques à mentionner
         """
-        await asyncio.sleep(delay if delay is not None else self._send_delay)
+        if delay:
+            await asyncio.sleep(delay)
+
         payload: dict[str, Any] = {
             "number": number,
             "text": text,
@@ -633,7 +635,9 @@ class EvolutionAPIClient:
             filename:   Nom de fichier (utile pour DOCUMENT)
             delay:      Override délai anti-ban
         """
-        await asyncio.sleep(delay if delay is not None else self._send_delay)
+        if delay:
+            await asyncio.sleep(delay)
+
         payload: dict[str, Any] = {
             "number": number,
             "url":    url,
@@ -646,10 +650,10 @@ class EvolutionAPIClient:
         if mention_all:
             payload["mentionAll"] = True
         if mention_jids:
-            payload["mentionedJid"] = ",".join(mention_jids)
+            payload["mentionedJid"] = mention_jids
 
         data = await self._request("POST", "send/media", json=payload)
-        sent = WASentMessage.model_validate(data)
+        sent = WASentMessage.model_validate(data.get("data"))
         logger.info("%s → %s | id=%s", media_type.value, number, sent.message_id)
         return sent
 
@@ -660,13 +664,14 @@ class EvolutionAPIClient:
         caption: str | None  = None,
         *,
         delay:   float | None = None,
+        mention_jids: list[str] | None = None
     ) -> WASentMessage:
         """
         Raccourci : envoie une image.
         Accepte URL publique ou base64 (le serveur détecte automatiquement).
         """
         return await self.send_media(
-            number, url, WAMediaType.IMAGE, caption=caption, delay=delay
+            number, url, WAMediaType.IMAGE, caption=caption, delay=delay, mention_jids=mention_jids
         )
 
     async def send_video(

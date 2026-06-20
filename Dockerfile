@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN playwright install chromium --with-deps
 
 # Stage 2: Runtime
 FROM python:3.11-slim

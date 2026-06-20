@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        width: 800px;
+        height: 800px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+    }
+
+    #card {
+        width: 760px;
+        height: 760px;
+        border-radius: 36px;
+        padding: 60px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background: #fdfbf7;
+        font-family: 'Figtree', sans-serif;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.03);
+    }
+
+    /* Blobs pastel décoratifs — signature NGL */
+    .blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(50px);
+        opacity: 0.55;
+        z-index: 0;
+    }
+    .blob-1 {
+        width: 280px; height: 280px;
+        top: -100px; left: -90px;
+        background: #ffd9e8; /* rose pastel */
+    }
+    .blob-2 {
+        width: 260px; height: 260px;
+        bottom: -110px; right: -80px;
+        background: #d6e4ff; /* bleu pastel */
+    }
+    .blob-3 {
+        width: 200px; height: 200px;
+        bottom: 60px; left: -60px;
+        background: #fff3c4; /* jaune pastel */
+        opacity: 0.45;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 1;
+    }
+
+    .thread-badge {
+        font-family: 'Syne', sans-serif;
+        font-weight: 800;
+        font-size: 21px;
+        color: #18181f;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        background: #ffffff;
+        padding: 8px 18px;
+        border-radius: 100px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .anon-pill {
+        font-size: 14px;
+        font-weight: 700;
+        color: #ffffff;
+        background: #18181f;
+        padding: 8px 16px;
+        border-radius: 100px;
+        letter-spacing: 0.3px;
+    }
+
+    .content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        z-index: 1;
+        padding: 30px 0;
+    }
+
+    .mention-tag {
+        display: inline-block;
+        background: #18181f;
+        color: #ffffff;
+        padding: 7px 18px;
+        border-radius: 100px;
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 24px;
+    }
+
+    .message-text {
+        font-size: {{ font_size | default(38) }}px;
+        line-height: 1.4;
+        color: #18181f;
+        font-weight: 600;
+        word-wrap: break-word;
+        letter-spacing: -0.3px;
+    }
+
+    .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 1;
+    }
+
+    .footer-label {
+        font-size: 14px;
+        color: #a3a3ad;
+        font-weight: 600;
+    }
+
+    .timestamp {
+        font-size: 14px;
+        color: #a3a3ad;
+        font-weight: 500;
+    }
+</style>
+</head>
+<body>
+    <div id="card">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+
+        <div class="header">
+            <div class="thread-badge">{{ thread_name }}</div>
+            <div class="anon-pill">ANONYME</div>
+        </div>
+
+        <div class="content">
+            <div>
+                {% if mentioned_names %}
+                <div class="mention-tag">@ {{ mentioned_names | join(', ') }}</div>
+                {% endif %}
+                <div class="message-text">{{ text }}</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-label">plateforme anonyme de l'école</div>
+            <div class="timestamp">{{ timestamp }}</div>
+        </div>
+    </div>
+</body>
+</html>

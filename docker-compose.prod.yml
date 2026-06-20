@@ -20,7 +20,7 @@ services:
   worker:
     build: .
     container_name: ngl_clone_worker
-    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=5 --max-tasks-per-child=10 -n default_worker@%h
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=3 --max-tasks-per-child=100 -n default_worker@%h
       # --concurrency=2 : Limite à 2 tâches simultanées pour éviter de surcharger le serveur
     # --max-tasks-per-child=10 : Redémarre le worker après 10 tâches pour libérer la mémoire (utile si certaines tâches sont gourmandes en RAM)
     volumes:
