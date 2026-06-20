@@ -14,8 +14,6 @@ from app.integrations.evolution_client import EvolutionAPIClient
 from app.schemas.webhook_schemas import (
     JoinedGroupEvent,
     MessageEvent,
-    WebhookEventType,
-    WebhookResponse,
     parse_webhook_event,
 )
 from fastapi import Request
@@ -147,9 +145,9 @@ class WebhookHandler:
         msg = event.data.Message.conversation
         logger.info(f"Message : {msg}")
         logger.info(f"Full Payload : {event.model_dump_json(indent=2)}")
-        is_command = msg and msg.startswith("/")
-        if is_command:
-            await client_command_handler.process(event)
+        if msg is not None and msg.startswith("/"):
+            command = msg.strip().split()[0]
+            await client_command_handler.process(event, command)
 
 # Instance singleton du handler
 def get_webhook_handler() -> WebhookHandler:

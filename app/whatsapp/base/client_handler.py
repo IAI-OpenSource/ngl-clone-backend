@@ -41,13 +41,10 @@ class Whathsappclientwrapper:
     async def _execute(cmd: Command, event: MessageEvent):
         await cmd.cmd_func(EvolutionAPIClient.get_instance(), event)
 
-    async def process(self, event: MessageEvent):
+    async def process(self, event: MessageEvent, event_cmd: str):
         evo_instance = EvolutionAPIClient.get_instance()
-        cmd_path = event.data.Message.conversation
-        if not cmd_path:
-            logger.warning("Aucune commande trouvée dans le message")
-            return None
-        cmd = self._commands_mapper.get(cmd_path, _default_command)
+
+        cmd = self._commands_mapper.get(event_cmd, _default_command)
 
         if cmd.admin_only:
             # Vérifier si l'utilisateur est admin dans le groupe

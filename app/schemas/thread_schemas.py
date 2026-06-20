@@ -67,6 +67,11 @@ class ReadThread(BaseModel):
 
 ReadThread.model_rebuild()
 
+class ReadThreadWithUserConnectionInfo(ReadThread):
+    """Schéma pour la lecture d'un thread avec les infos de connexion de l'utilisateur."""
+
+    is_connected: bool = Field(default=False, description="Indique si l'utilisateur est connecté à ce thread")
+
 class InternalForLoginReadThread(BaseModel):
     """"""
     id: UUID = Field(description="ID unique du thread")
@@ -92,6 +97,8 @@ InternalForLoginReadThread.model_rebuild()
 class ThreadInfos(DefaultAppApiResponse[ReadThread]):
     """Schéma enveloppe pour un thread unique."""
 
+class ThreadWithUserConnectionInfo(DefaultAppApiResponse[ReadThreadWithUserConnectionInfo]):
+    """Schéma enveloppe pour un thread unique avec les infos de connexion de l'utilisateur."""
 
-class ListThreadsInfos(DefaultAppApiResponse[List[ReadThread]]):
+class ListThreadsInfos(DefaultAppApiResponse[List[ReadThreadWithUserConnectionInfo]]):
     """Schéma enveloppe pour une liste de threads."""
