@@ -35,6 +35,7 @@ class UpdateThread(BaseModel):
     description: Optional[str] = Field(description="Description du thread")
     wa_group_name: Optional[str] = Field(description="Nom du groupe WhatsApp", max_length=100)
     is_active: Optional[bool] = Field(description="Indique si le thread est actif")
+    is_currently_locked: Optional[bool] = Field(description="Indique si le thread est actuellement bloqué pour les nouveaux messages")
 
 class ThreadAuthPayload(BaseModel):
     thread_id: str
@@ -55,6 +56,7 @@ class ReadThread(BaseModel):
     wa_group_jid: str = Field(description="ID de groupe WhatsApp")
     wa_group_name: Optional[str] = Field(None, description="Nom du groupe WhatsApp")
     is_active: bool = Field(description="Indique si le thread est actif")
+    is_currently_locked: bool = Field(default=False, description="Indique si le thread est actuellement bloqué pour les nouveaux messages")
     last_wa_sync_at: Optional[datetime] = Field(None, description="Dernière synchronisation WhatsApp")
     created_at: datetime = Field(description="Date de création du thread")
     updated_at: datetime = Field(description="Date de dernière mise à jour du thread")
@@ -81,6 +83,7 @@ class InternalForLoginReadThread(BaseModel):
     wa_group_jid: str = Field(description="ID de groupe WhatsApp")
     wa_group_name: Optional[str] = Field(description="Nom du groupe WhatsApp")
     is_active: bool = Field(description="Indique si le thread est actif")
+    is_currently_locked: bool = Field(default=False, description="Indique si le thread est actuellement bloqué pour les nouveaux messages")
     last_wa_sync_at: Optional[datetime] = Field(
         description="Dernière synchronisation WhatsApp"
     )

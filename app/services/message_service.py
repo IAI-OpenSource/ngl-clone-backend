@@ -125,6 +125,12 @@ class MessageService:
         """Logique métier pour ajouter un message à un thread."""
         thread_id_uuid = UUID(thread_id)
 
+        # Vérifier que le thread autorise la création de nouveaux messages
+        thread_svc = ThreadService(self.__db, self.__cache)
+        verif = await thread_svc.verify_thread_allows_posting(thread_id_uuid)
+        if verif.is_error():
+            return ServiceResult.service_failure(error=verif.error, status_code=verif.status_code)
+
         message_repo = await self.__message_repo.insert_message(
             thread_id=thread_id_uuid,
             content=message_data.content,

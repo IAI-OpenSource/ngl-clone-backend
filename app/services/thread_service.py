@@ -73,6 +73,39 @@ class ThreadService:
             ), status_code=400)
         return ServiceResult.service_success(data=None)
 
+    async def verify_thread_allows_posting(
+        self, thread: ReadThread | Thread | UUID
+    ) -> DefaultAppServiceResult[None]:
+        """Vérifie si le thread autorise la création de nouveaux messages (non verrouillé)."""
+        usable_thread: ReadThread
+        if isinstance(thread, UUID):
+            read_request = await self.service_find_thread_by_id(thread_id=thread)
+            if read_request.is_error():
+                return ServiceResult.service_failure(error=AppError(
+                    error_message=read_request.error.error_message,
+                    error_type=read_request.error.error_type
+                ), status_code=read_request.status_code)
+            usable_thread = read_request.data
+        elif isinstance(thread, Thread):
+            usable_thread = self._build_read_thread_schemas(thread)
+        elif isinstance(thread, ReadThread):
+            usable_thread = thread
+        else:
+            logger.error(f"Type de thread non supporté pour vérification du verrouillage: {type(thread)}")
+            return ServiceResult.service_failure(error=AppError(
+                error_message="Type de thread non supporté",
+                error_type=AppErrorType.UNKNOWN_ERROR
+            ), status_code=400)
+
+        if getattr(usable_thread, "is_currently_locked", False):
+            logger.info(f"Thread {usable_thread.id} est actuellement verrouillé. Opération interdite.")
+            return ServiceResult.service_failure(error=AppError(
+                error_message="Ce thread est actuellement bloqué, vous ne pouvez pas poster de nouveaux messages.",
+                error_type=AppErrorType.LOCKED_CONTENT
+            ), status_code=400)
+
+        return ServiceResult.service_success(data=None)
+
     @staticmethod
     def _verify_user_connected_to_thread(
         thread: ReadThread, user_token: ThreadAuthPayload | None

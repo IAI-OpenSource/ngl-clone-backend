@@ -34,6 +34,7 @@ UQ_THREADS_SLUG = "uq_threads_slug"
 UQ_THREADS_WA_GROUP_JID = "uq_threads_wa_group_jid"
 IDX_THREADS_WA_GROUP_JID = "idx_threads_wa_group_jid"
 IDX_THREADS_IS_ACTIVE = "idx_threads_is_active"
+IDX_THREADS_IS_LOCKED = "idx_threads_is_locked"
 IDX_THREADS_CREATED_AT = "idx_threads_created_at"
 
 
@@ -66,6 +67,11 @@ class Thread(Base, IntegrityMapperMixin):
         Boolean, nullable=False, default=True, init=False
     )
 
+    # Verrouillage - si True, on ne peut pas poster de nouveaux messages
+    is_currently_locked: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, init=False
+    )
+
     # Synchronisation WhatsApp
     last_wa_sync_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True, init=False
@@ -89,6 +95,7 @@ class Thread(Base, IntegrityMapperMixin):
         Index(UQ_THREADS_WA_GROUP_JID, "wa_group_jid", unique=True),
         Index(IDX_THREADS_WA_GROUP_JID, "wa_group_jid"),
         Index(IDX_THREADS_IS_ACTIVE, "is_active"),
+        Index(IDX_THREADS_IS_LOCKED, "is_currently_locked"),
         Index(IDX_THREADS_CREATED_AT, "created_at", postgresql_using="btree"),
     )
 
