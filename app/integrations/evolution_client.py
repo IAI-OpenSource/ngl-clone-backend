@@ -578,7 +578,7 @@ class EvolutionAPIClient:
         if mention_all:
             payload["mentionAll"] = True
         if mention_jids:
-            payload["mentionedJid"] = ",".join(mention_jids)
+            payload["mentionedJid"] = mention_jids
 
         data = await self._request("POST", "send/text", json=payload)
         sent = WASentMessage.model_validate(data.get("data"))

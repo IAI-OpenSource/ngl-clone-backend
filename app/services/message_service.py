@@ -17,6 +17,8 @@ from ..db.models.member import Member
 from ..db.models.message import Message
 from ..globals.services_names import ServicesNames
 from ..schemas.member_schemas import ReadMember
+from ..worker.celery_app import celery_app
+from ..worker.tasks.base.workers_task_names import WorkersTaskNames
 
 logger = getLogger(__name__)
 
@@ -140,6 +142,11 @@ class MessageService:
         if message_repo.is_error():
             logger.error(f"Erreur: {message_repo.error}")
             return message_repo.to_service_error(service_name=self._service_name)
+
+        celery_app.send_task(
+            WorkersTaskNames.SEND_MESSAGE_TO_GROUP,
+            kwargs={"message_id": str(message_repo.data.id)},
+        )
 
         read_message = ReadMessage.model_validate(message_repo.data)
 
