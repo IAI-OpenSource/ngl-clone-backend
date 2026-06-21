@@ -38,6 +38,8 @@ class ThreadRepository:
                 description=thread_data.description,
                 wa_group_jid=thread_data.wa_group_jid,
                 wa_group_name=thread_data.wa_group_name,
+                # is_currently_locked sera False par défaut; laissé explicite si besoin
+
             )
             if thread_data.password is not None:
                 thread.password_hash = hasher_password(thread_data.password)
@@ -152,6 +154,7 @@ class ThreadRepository:
         wa_group_name: Optional[str] = None,
         password_hash: Optional[str] = None,
         is_active: Optional[bool] = None,
+        is_currently_locked: Optional[bool] = None,
         last_wa_sync_at: Optional[datetime] = None,
     ) -> DefaultAppCrudResult[Thread]:
         """Fonction pour mettre à jour un thread dans la base de données."""
@@ -173,6 +176,8 @@ class ThreadRepository:
                 old_thread.data.password_hash = password_hash
             if is_active is not None:
                 old_thread.data.is_active = is_active
+            if is_currently_locked is not None:
+                old_thread.data.is_currently_locked = is_currently_locked
             if last_wa_sync_at is not None:
                 old_thread.data.last_wa_sync_at = last_wa_sync_at
 

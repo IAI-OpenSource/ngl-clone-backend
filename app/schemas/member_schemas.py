@@ -20,7 +20,7 @@ class CreateMember(BaseModel):
     display_name: Optional[str] = Field(description="Nom d'affichage du membre", max_length=100)
     phone_number: Optional[str] = Field(description="Numéro de téléphone du membre", max_length=20)
     avatar_url: Optional[str] = Field(description="URL de l'avatar du membre")
-
+    is_admin: Optional[bool] = Field(False, description="Indique si le membre est un administrateur du groupe")
 
 class UpdateMember(BaseModel):
     """Schéma pour la mise à jour d'un membre."""

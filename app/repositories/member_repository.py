@@ -16,6 +16,7 @@ from fastapi import status
 from app.db.models.member import Member
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
+from app.schemas.member_schemas import CreateMember
 
 logger = getLogger(__name__)
 
@@ -177,6 +178,47 @@ class MemberRepository:
             return CrudResult.crud_success(None, status_code=status.HTTP_204_NO_CONTENT)
 
         except Exception as e:
+            return await RepositoriesUtils.traiter_errors_en_global(
+                e, self.db, logger, Member
+            )
+
+    async def insert_many_members(
+        self, members_data: list[CreateMember]
+    ) -> DefaultAppCrudResult[list[Member]]:
+        """Fonction pour insérer plusieurs membres en base de données en une seule opération.
+        
+        Args:
+            members_data: Liste de dictionnaires contenant les données des membres à insérer.
+                         Chaque dictionnaire doit contenir au moins 'wa_jid'.
+                         Peut contenir: wa_jid, wa_name, display_name, phone_number, avatar_url.
+        
+        Returns:
+            CrudResult contenant la liste des membres créés.
+        """
+        try:
+            members = []
+            for data in members_data:
+                member = Member(
+                    wa_jid=data.wa_jid,
+                    wa_name=data.wa_name,
+                    display_name=data.display_name,
+                    phone_number=data.phone_number,
+                    avatar_url=data.avatar_url,
+                )
+                members.append(member)
+            
+            self.db.add_all(members)
+            await self.db.flush()  # Flush pour générer les IDs avant le commit
+
+            await self.db.commit()
+            
+            logger.info(f"{len(members)} membres ajoutés avec succès en bulk!")
+            return CrudResult.crud_success(
+                data=members, status_code=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            await self.db.rollback()
             return await RepositoriesUtils.traiter_errors_en_global(
                 e, self.db, logger, Member
             )

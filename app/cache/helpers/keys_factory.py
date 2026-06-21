@@ -24,6 +24,9 @@ class CacheKeysFactory:
         AvailableCacheKeys.THREAD_OBJECT: CacheKey.new_key(
             AvailableCacheKeys.THREAD_OBJECT, 1
         ),
+        AvailableCacheKeys.THREAD_BY_WA_GROUP_OBJECT: CacheKey.new_key(
+            AvailableCacheKeys.THREAD_BY_WA_GROUP_OBJECT, 1
+        ),
         AvailableCacheKeys.MEMBER_OBJECT: CacheKey.new_key(
             AvailableCacheKeys.MEMBER_OBJECT, 1
         ),

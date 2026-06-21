@@ -118,6 +118,14 @@ class _ThreadAuthDependencies:
 
         return ThreadAuthPayload.model_validate(payload)
 
+    def safe_get_connected_thread(self) -> ThreadAuthPayload | None:
+        """Comme get_connected_thread mais au lieu de raise une HTTPException en cas d'erreur, elle return None"""
+        try:
+            return self.get_connected_thread()
+        except HTTPException:
+            return None
+
+
 # Fonction pour instancier ta classe avec tout ce qu'il faut
 def _get_user_auth_deps(
     request: HTTPConnection,
@@ -147,3 +155,8 @@ def get_connected_thread(
     auth_deps: _ThreadAuthDependencies = Depends(_get_thread_auth_deps),
 ) -> ThreadAuthPayload:
     return auth_deps.get_connected_thread()
+
+def safe_get_connected_thread(
+    auth_deps: _ThreadAuthDependencies = Depends(_get_thread_auth_deps),
+) -> ThreadAuthPayload | None:
+    return auth_deps.safe_get_connected_thread()

@@ -58,13 +58,31 @@ services:
       redis:
         condition: service_healthy
 
+  webhook-receiver:
+    build: .
+    container_name: ngl_clone_webhook_receiver
+    command: uvicorn app.webhook_app:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8000/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: ${START_PERIOD:-5}s
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 
   # Workers Celery (Tâches de fond)
   worker:
     build: .
     container_name: ngl_clone_worker
-    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=5 --max-tasks-per-child=10 -n default_worker@%h
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=2 --max-tasks-per-child=100 -n default_worker@%h
      # --concurrency=2 : Limite à 2 tâches simultanées pour éviter de surcharger le serveur
      # --max-tasks-per-child=10 : Redémarre le worker après 10 tâches pour libérer la mémoire (utile si certaines tâches sont gourmandes en RAM)
     volumes:

@@ -30,6 +30,12 @@ DATABASE_HOST: str = os.getenv("DATABASE_HOST") or ""
 # Nom de la db
 DATABASE_NAME: str = os.getenv("DATABASE_NAME") or ""
 
+EVO_GLOBAL_API_KEY: str = os.getenv("GLOBAL_API_KEY") or ""
+
+EVO_ACTIVE_INSTANCE_API_KEY: str = os.getenv("ACTIVE_INSTANCE_API_KEY") or ""
+
+EVO_GLOBAL_API_URL: str = os.getenv("EVO_URL", "")
+
 # Clé secrete pour hashage et autres
 ACCESS_SECRET_KEY: str = os.getenv("SECRET_KEY") or ""
 REFRESH_TOKEN_SECRET_KEY: str = os.getenv("REFRESH_TOKEN_SECRET_KEY") or ""

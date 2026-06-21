@@ -8,7 +8,11 @@ from app.cache.thread_cache import ThreadCache
 from app.globals.cache_duration import CacheDuration
 from app.repositories.thread_repository import ThreadRepository
 from app.repositories.thread_member_repository import ThreadMemberRepository
-from app.schemas.thread_schemas import CreateThread, ReadThread
+from app.schemas.thread_schemas import (
+    CreateThread,
+    ReadThread,
+    ReadThreadWithUserConnectionInfo,
+)
 from app.schemas.member_schemas import ReadMember
 from app.db.models.thread import Thread
 from app.globals.businnes_error import AppError, AppErrorType
@@ -34,17 +38,21 @@ class ThreadService:
     def _build_read_thread_schemas(thread_bd_data : Thread) -> ReadThread:
         th = ReadThread.model_validate(thread_bd_data)
         if thread_bd_data.password_hash is not None:
-            logger.info(thread_bd_data.password_hash)
             th.has_password = True
 
         return th
 
-    async def verify_can_interract_with_thread(self, thread: ReadThread | Thread | UUID, user_token: ThreadAuthPayload) -> DefaultAppServiceResult[ReadThread]:
+    async def verify_can_interract_with_thread(
+        self, thread: ReadThread | Thread | UUID, user_token: ThreadAuthPayload
+    ) -> DefaultAppServiceResult[None]:
         usable_thread: ReadThread
         if isinstance(thread, UUID):
             read_request = await self.service_find_thread_by_id(thread_id=thread)
             if read_request.is_error():
-                return read_request
+                return ServiceResult.service_failure(error=AppError(
+                error_message=read_request.error.error_message,
+                error_type=read_request.error.error_type
+            ), status_code=read_request.status_code)
             usable_thread = read_request.data
         elif isinstance(thread, Thread):
             usable_thread = self._build_read_thread_schemas(thread)
@@ -63,11 +71,54 @@ class ThreadService:
                 error_message="Tu ne peux pas communiquer avec ce thread poto, connecte toii au thread d'bord",
                 error_type=AppErrorType.LOCKED_CONTENT
             ), status_code=400)
-        return ServiceResult.service_success(data=usable_thread)
+        return ServiceResult.service_success(data=None)
+
+    async def verify_thread_allows_posting(
+        self, thread: ReadThread | Thread | UUID
+    ) -> DefaultAppServiceResult[None]:
+        """Vérifie si le thread autorise la création de nouveaux messages (non verrouillé)."""
+        usable_thread: ReadThread
+        if isinstance(thread, UUID):
+            read_request = await self.service_find_thread_by_id(thread_id=thread)
+            if read_request.is_error():
+                return ServiceResult.service_failure(error=AppError(
+                    error_message=read_request.error.error_message,
+                    error_type=read_request.error.error_type
+                ), status_code=read_request.status_code)
+            usable_thread = read_request.data
+        elif isinstance(thread, Thread):
+            usable_thread = self._build_read_thread_schemas(thread)
+        elif isinstance(thread, ReadThread):
+            usable_thread = thread
+        else:
+            logger.error(f"Type de thread non supporté pour vérification du verrouillage: {type(thread)}")
+            return ServiceResult.service_failure(error=AppError(
+                error_message="Type de thread non supporté",
+                error_type=AppErrorType.UNKNOWN_ERROR
+            ), status_code=400)
+
+        if getattr(usable_thread, "is_currently_locked", False):
+            logger.info(f"Thread {usable_thread.id} est actuellement verrouillé. Opération interdite.")
+            return ServiceResult.service_failure(error=AppError(
+                error_message="Ce thread est actuellement bloqué, vous ne pouvez pas poster de nouveaux messages.",
+                error_type=AppErrorType.LOCKED_CONTENT
+            ), status_code=400)
+
+        return ServiceResult.service_success(data=None)
+
+    @staticmethod
+    def _verify_user_connected_to_thread(
+        thread: ReadThread, user_token: ThreadAuthPayload | None
+    ) -> ReadThreadWithUserConnectionInfo:
+        res = ReadThreadWithUserConnectionInfo.model_validate(thread)
+        if user_token is not None and user_token.thread_id == str(thread.id):
+            res.is_connected = True
+        return res
 
     async def service_find_thread_by_id(
-        self, thread_id: UUID
-    ) -> DefaultAppServiceResult[ReadThread]:
+        self, thread_id: UUID,
+        optionnal_user_connected_thread: ThreadAuthPayload | None = None
+    ) -> DefaultAppServiceResult[ReadThreadWithUserConnectionInfo]:
         """Logique métier de récupération d'un thread par ID."""
 
         thread_from_cache = await self.__thread_cache.get_thread_from_cache(
@@ -75,6 +126,7 @@ class ThreadService:
         )
 
         if thread_from_cache is not None:
+            thread_from_cache = self._verify_user_connected_to_thread(thread_from_cache, optionnal_user_connected_thread)
             return ServiceResult.service_success(data=thread_from_cache)
 
         thread_repo = await self.__thread_repo.get_thread_by_id(thread_id=thread_id)
@@ -89,14 +141,18 @@ class ThreadService:
             thread=read_thread, ttl=CacheDuration.TWENTY_MINUTES
         )
 
+        read_thread = self._verify_user_connected_to_thread(read_thread, optionnal_user_connected_thread)
+
         return ServiceResult.service_success(
             data=read_thread,
             service_name=self._service_name,
         )
 
     async def service_find_thread_by_slug(
-        self, slug: str
-    ) -> DefaultAppServiceResult[ReadThread]:
+        self,
+        slug: str,
+        optionnal_user_connected_thread: ThreadAuthPayload | None = None,
+    ) -> DefaultAppServiceResult[ReadThreadWithUserConnectionInfo]:
         """Logique métier de récupération d'un thread par slug."""
 
         thread_repo = await self.__thread_repo.get_thread_by_slug(slug=slug)
@@ -111,17 +167,23 @@ class ThreadService:
             thread=read_thread, ttl=CacheDuration.TWENTY_MINUTES
         )
 
+        read_thread = self._verify_user_connected_to_thread(read_thread, optionnal_user_connected_thread)
+
         return ServiceResult.service_success(
             data=read_thread,
             service_name=self._service_name,
         )
 
-    async def service_find_all_threads(self) -> DefaultAppServiceResult[list[ReadThread]]:
+    async def service_find_all_threads(
+            self,
+            optionnal_user_connected_thread: ThreadAuthPayload | None = None
+    ) -> DefaultAppServiceResult[list[ReadThreadWithUserConnectionInfo]]:
         """Logique métier de récupération de tous les threads."""
 
         threads_from_cache = await self.__thread_cache.get_threads_list_from_cache()
 
         if threads_from_cache is not None:
+            threads_from_cache = [self._verify_user_connected_to_thread(t, optionnal_user_connected_thread) for t in threads_from_cache]
             return ServiceResult.service_success(
                 data=threads_from_cache,
                 service_name=self._service_name,
@@ -138,6 +200,8 @@ class ThreadService:
         await self.__thread_cache.set_threads_list_in_cache(
             threads=read_threads, ttl=CacheDuration.TWENTY_MINUTES
         )
+
+        read_threads = [self._verify_user_connected_to_thread(thread, optionnal_user_connected_thread) for thread in read_threads]
 
         return ServiceResult.service_success(
             data=read_threads,
@@ -167,6 +231,37 @@ class ThreadService:
             status_code=thread_repo.status_code,
             service_name=self._service_name,
         )
+
+
+    async def service_find_thread_by_wa_group_jid(
+        self, wa_group_jid: str
+    ) -> DefaultAppServiceResult[ReadThread]:
+        """Logique métier de récupération d'un thread par JID du groupe WhatsApp."""
+        
+        thread_from_cache = await self.__thread_cache.get_thread_by_wa_group_from_cache(wa_group_jid)
+        if thread_from_cache is not None:
+            return ServiceResult.service_success(
+                data=thread_from_cache,
+                service_name=self._service_name
+            )
+        
+        thread_repo = await self.__thread_repo.get_thread_by_wa_group_jid(wa_group_jid)
+        
+        if thread_repo.is_error():
+            logger.error(f"Erreur: {thread_repo.error}")
+            return thread_repo.to_service_error(service_name=self._service_name)
+        
+        read_thread = self._build_read_thread_schemas(thread_repo.data)
+
+        await self.__thread_cache.set_thread_by_wa_group_in_cache(
+            wa_group_jid=wa_group_jid, thread=read_thread, ttl=CacheDuration.TWENTY_MINUTES
+        )
+        
+        return ServiceResult.service_success(
+            data=read_thread,
+            service_name=self._service_name,
+        )
+
 
     async def service_get_thread_members(
         self, thread_id: UUID, include_inactive: bool = False
