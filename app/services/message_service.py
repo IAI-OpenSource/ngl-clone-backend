@@ -17,6 +17,8 @@ from ..db.models.member import Member
 from ..db.models.message import Message
 from ..globals.services_names import ServicesNames
 from ..schemas.member_schemas import ReadMember
+from ..worker.celery_app import celery_app
+from ..worker.tasks.base.workers_task_names import WorkersTaskNames
 
 logger = getLogger(__name__)
 
@@ -125,6 +127,12 @@ class MessageService:
         """Logique métier pour ajouter un message à un thread."""
         thread_id_uuid = UUID(thread_id)
 
+        # Vérifier que le thread autorise la création de nouveaux messages
+        thread_svc = ThreadService(self.__db, self.__cache)
+        verif = await thread_svc.verify_thread_allows_posting(thread_id_uuid)
+        if verif.is_error():
+            return ServiceResult.service_failure(error=verif.error, status_code=verif.status_code)
+
         message_repo = await self.__message_repo.insert_message(
             thread_id=thread_id_uuid,
             content=message_data.content,
@@ -134,6 +142,11 @@ class MessageService:
         if message_repo.is_error():
             logger.error(f"Erreur: {message_repo.error}")
             return message_repo.to_service_error(service_name=self._service_name)
+
+        celery_app.send_task(
+            WorkersTaskNames.SEND_MESSAGE_TO_GROUP,
+            kwargs={"message_id": str(message_repo.data.id)},
+        )
 
         read_message = ReadMessage.model_validate(message_repo.data)
 

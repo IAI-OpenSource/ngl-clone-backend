@@ -279,7 +279,7 @@ class MessageRepository:
                 .options(joinedload(Message.mentions).joinedload(MessageMention.member))
             )
             result = await self.db.execute(stmt)
-            message = result.scalar_one_or_none()
+            message = result.unique().scalar_one_or_none()
 
             if message is None:
                 logger.info(f"Message avec ID {message_id} non trouvé")

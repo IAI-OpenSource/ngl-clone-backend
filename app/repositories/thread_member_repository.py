@@ -230,3 +230,45 @@ class ThreadMemberRepository:
             return await RepositoriesUtils.traiter_errors_en_global(
                 e, self.db, logger, ThreadMember
             )
+
+    async def bulk_insert_thread_members(
+        self, thread_members_data: list[dict]
+    ) -> DefaultAppCrudResult[list[ThreadMember]]:
+        """Fonction pour insérer plusieurs associations thread/membre en une seule opération.
+        
+        Args:
+            thread_members_data: Liste de dictionnaires contenant les données des associations.
+                               Chaque dictionnaire doit contenir: thread_id, member_id.
+                               Peut contenir: wa_role (par défaut MEMBER), is_active (par défaut True).
+        
+        Returns:
+            CrudResult contenant la liste des associations thread/membre créées.
+        """
+        try:
+            thread_members = []
+            for data in thread_members_data:
+                thread_member = ThreadMember(
+                    thread_id=data["thread_id"],
+                    member_id=data["member_id"],
+                    wa_role=data.get("wa_role", WAMemberRole.MEMBER),
+                )
+                # is_active a init=False, donc on l'assigne après
+                thread_member.is_active = data.get("is_active", True)
+                thread_members.append(thread_member)
+            
+            self.db.add_all(thread_members)
+            await self.db.commit()
+            
+            for thread_member in thread_members:
+                await self.db.refresh(thread_member)
+            
+            logger.info(f"{len(thread_members)} associations thread/membre ajoutées avec succès en bulk!")
+            return CrudResult.crud_success(
+                data=thread_members, status_code=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            await self.db.rollback()
+            return await RepositoriesUtils.traiter_errors_en_global(
+                e, self.db, logger, ThreadMember
+            )

@@ -13,7 +13,7 @@ from app.globals.cache_duration import CacheDuration
 from app.schemas.thread_schemas import ReadThread
 from app.schemas.message_schemas import ReadMessage
 from app.schemas.member_schemas import ReadMember
-from app.schemas.thread_schemas import InternalForLoginReadThread
+from app.schemas.thread_schemas import InternalReadThread
 
 logger = getLogger(__name__)
 
@@ -39,7 +39,7 @@ class ThreadCache:
         ).set_arguments(id=str(thread_id))
 
 
-    async def set_raw_thread_in_cache(self, thread : InternalForLoginReadThread, ttl: int = CacheDuration.TWENTY_MINUTES) -> None:
+    async def set_raw_thread_in_cache(self, thread : InternalReadThread, ttl: int = CacheDuration.TWENTY_MINUTES) -> None:
         """Enregistre un thread dans le cache à partir d'une instance de InternalForLoginReadThread.
 
         Args:
@@ -57,14 +57,14 @@ class ThreadCache:
         except Exception as e:
             CacheUtils.traiter_exceptions(e, logger)
 
-    async def get_raw_thread_from_cache(self, thread_id: UUID) -> Optional[InternalForLoginReadThread]:
+    async def get_raw_thread_from_cache(self, thread_id: UUID) -> Optional[InternalReadThread]:
         """Récupère un thread brut (InternalForLoginReadThread) depuis le cache.
 
         Args:
             thread_id: ID du thread à récupérer
 
         Returns:
-            Optional[InternalForLoginReadThread]: Le thread brut si trouvé, None sinon
+            Optional[InternalReadThread]: Le thread brut si trouvé, None sinon
         """
         try:
             cache_key = CacheKeysFactory.get_cache_key(
@@ -72,7 +72,7 @@ class ThreadCache:
             ).set_arguments(id=str(thread_id))
 
             return await self.cache.get_pydantic_model_from_cache(
-                key=cache_key, model_class=InternalForLoginReadThread
+                key=cache_key, model_class=InternalReadThread
             )
         except Exception as e:
             CacheUtils.traiter_exceptions(e, logger)
@@ -328,5 +328,68 @@ class ThreadCache:
             cache_key = self.create_members_by_thread_cache_key(thread_id)
             await self.cache.delete_in_cache(key=cache_key)
             logger.info(f"Cache des membres du thread {thread_id} invalidé")
+        except Exception as e:
+            CacheUtils.traiter_exceptions(e, logger)
+
+    @staticmethod
+    def _create_thread_by_wa_group_cache_key(wa_group_jid: str) -> CacheKey:
+        """Crée une clé de cache pour un thread par JID du groupe WhatsApp.
+
+        Args:
+            wa_group_jid: JID du groupe WhatsApp
+
+        Returns:
+            CacheKey: Instance de CacheKey pour le thread
+        """
+        return CacheKeysFactory.get_cache_key(
+            AvailableCacheKeys.THREAD_BY_WA_GROUP_OBJECT
+        ).set_arguments(wa_group_jid=wa_group_jid)
+
+    async def set_thread_by_wa_group_in_cache(
+        self, wa_group_jid: str, thread: ReadThread, ttl: int = CacheDuration.TWENTY_MINUTES
+    ) -> None:
+        """Enregistre un thread dans le cache indexé par wa_group_jid.
+
+        Args:
+            wa_group_jid: JID du groupe WhatsApp
+            thread: Thread à mettre en cache
+            ttl: Durée de vie en secondes
+        """
+        try:
+            cache_key = self._create_thread_by_wa_group_cache_key(wa_group_jid)
+            await self.cache.save_pydantic_model_in_cache(
+                key=cache_key, model_instance=thread, expire_seconds=ttl
+            )
+        except Exception as e:
+            CacheUtils.traiter_exceptions(e, logger)
+
+    async def get_thread_by_wa_group_from_cache(self, wa_group_jid: str) -> Optional[ReadThread]:
+        """Récupère un thread depuis le cache indexé par wa_group_jid.
+
+        Args:
+            wa_group_jid: JID du groupe WhatsApp
+
+        Returns:
+            ReadThread si trouvé, None sinon
+        """
+        try:
+            cache_key = self._create_thread_by_wa_group_cache_key(wa_group_jid)
+            return await self.cache.get_pydantic_model_from_cache(
+                key=cache_key, model_class=ReadThread
+            )
+        except Exception as e:
+            CacheUtils.traiter_exceptions(e, logger)
+            return None
+
+    async def invalid_thread_by_wa_group_in_cache(self, wa_group_jid: str) -> None:
+        """Invalide un thread dans le cache indexé par wa_group_jid.
+
+        Args:
+            wa_group_jid: JID du groupe WhatsApp
+        """
+        try:
+            cache_key = self._create_thread_by_wa_group_cache_key(wa_group_jid)
+            await self.cache.delete_in_cache(key=cache_key)
+            logger.info(f"Cache du thread par wa_group_jid {wa_group_jid} invalidé")
         except Exception as e:
             CacheUtils.traiter_exceptions(e, logger)

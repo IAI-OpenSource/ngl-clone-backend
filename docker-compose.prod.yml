@@ -3,10 +3,10 @@ services:
     build: .
     container_name: ngl_clone_api
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    volumes:
-      - .:/app
+    env_file:
+      - .env
     ports:
-      - "${API_PORT:-8000}:8000"      # Expose le port 8000 de l'API sur le port défini dans .env ou 8000 par défaut
+      - "${API_PORT:-8000}:8000"
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://localhost:8000/health || exit 1" ]
       interval: 30s
@@ -14,16 +14,31 @@ services:
       retries: 3
       start_period: ${START_PERIOD:-5}s
     restart: unless-stopped
+    mem_limit: 1024m
 
+  webhook-receiver:
+    build: .
+    container_name: ngl_clone_webhook_receiver
+    command: uvicorn app.webhook_app:app --host 0.0.0.0 --port 8000
+    env_file:
+      - .env
 
-  # Workers Celery (Tâches de fond)
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8000/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: ${START_PERIOD:-5}s
+    restart: unless-stopped
+    mem_limit: 512m
+
+  # Workers Celery (tâches de fond)
   worker:
     build: .
     container_name: ngl_clone_worker
-    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=5 --max-tasks-per-child=10 -n default_worker@%h
-      # --concurrency=2 : Limite à 2 tâches simultanées pour éviter de surcharger le serveur
-    # --max-tasks-per-child=10 : Redémarre le worker après 10 tâches pour libérer la mémoire (utile si certaines tâches sont gourmandes en RAM)
-    volumes:
-      - .:/app
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=3 --max-tasks-per-child=100 -n default_worker@%h
+      # --concurrency=3 : nombre de tâches/instances Chromium simultanées
+      # --max-tasks-per-child=100 : redémarre le worker après 100 tâches pour libérer la mémoire
+    env_file:
+      - .env
     restart: unless-stopped
-
