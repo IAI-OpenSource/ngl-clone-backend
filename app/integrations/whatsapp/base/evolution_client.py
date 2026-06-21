@@ -242,9 +242,9 @@ class EvolutionAPIClient:
         payload = {
           "immediate": True,
           "subscribe": [
-            "GROUP",
+            "GROUP"
           ],
-          "webhookUrl": "http://ngl_clone_api:8000/v1/threads/webhook"
+          "webhookUrl": "http://ngl_clone_webhook_receiver:8000/webhook"
         }
 
         res = await self._request("POST", "instance/connect", json=payload)

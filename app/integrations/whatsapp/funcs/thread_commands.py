@@ -20,9 +20,11 @@ from app.integrations.whatsapp.messages import (
     get_help_message,
     get_docs_message,
 )
+from app.utils.whatsapp_utils import normalize_slug
 
 logger = getLogger(__name__)
 
+_UNCONNECTED_GROUP_MSG = "⚠️ Ce groupe n'est pas connecté à un thread. Utilisez * /map_group * pour l'associer."
 
 async def _invalid_thread_cache(thread_cache: ThreadCache, thread_id: UUID, wa_group_jid: str):
     """
@@ -181,6 +183,7 @@ async def _update_thread_field(
                 description=new_value
             )
         elif field == "slug":
+            new_value = normalize_slug(new_value)
             result = await thread_repo.update_thread(
                 thread_id=thread.id,
                 slug=new_value
@@ -234,7 +237,7 @@ async def ngl_status_handler(ctx: EvolutionAPIClient, data: MessageEvent):
     if thread is None:
         await ctx.send_text(
             number=wa_group_jid,
-            text="⚠️ Ce groupe n'est pas connecté à un thread. Utilisez * /map_group * pour l'associer."
+            text=_UNCONNECTED_GROUP_MSG
         )
         return
     
@@ -256,7 +259,7 @@ async def lock_thread_handler(ctx: EvolutionAPIClient, data: MessageEvent):
     if thread is None:
         await ctx.send_text(
             number=wa_group_jid,
-            text="⚠️ Ce groupe n'est pas connecté à un thread."
+            text=_UNCONNECTED_GROUP_MSG
         )
         return
     
@@ -287,7 +290,7 @@ async def unlock_thread_handler(ctx: EvolutionAPIClient, data: MessageEvent):
     if thread is None:
         await ctx.send_text(
             number=wa_group_jid,
-            text="⚠️ Ce groupe n'est pas connecté à un thread."
+            text=_UNCONNECTED_GROUP_MSG
         )
         return
     
@@ -310,16 +313,14 @@ async def edit_thread_handler(ctx: EvolutionAPIClient, data: MessageEvent):
     Parse la commande et met à jour le champ correspondant.
     """
     wa_group_jid = data.data.groupData.JID
-    msg_text = data.data.Message.conversation
-    if msg_text is None:
-        await ctx.send_text(
-            number=wa_group_jid,
-            text="❌ Commande invalide."
-        )
+    command = data.command
+
+    value = " ".join(data.args).strip() if data.args else None
+
+    if not command:
+        await ctx.send_text(number=wa_group_jid, text="❌ Commande d'invalide")
         return
-    parts = msg_text.strip().split(maxsplit=1)
-    command = parts[0]
-    
+
     logger.info(f"Exécution de {command} pour le groupe {wa_group_jid}")
     
     # Mapping des commandes aux champs
@@ -337,7 +338,7 @@ async def edit_thread_handler(ctx: EvolutionAPIClient, data: MessageEvent):
         )
         return
     
-    if len(parts) < 2:
+    if not value:
         field_names = {
             "name": "nom",
             "description": "description",
@@ -350,13 +351,13 @@ async def edit_thread_handler(ctx: EvolutionAPIClient, data: MessageEvent):
         )
         return
     
-    new_value = parts[1].strip()
+    new_value = value
     thread = await _get_thread_by_group_jid(wa_group_jid)
     
     if thread is None:
         await ctx.send_text(
             number=wa_group_jid,
-            text="⚠️ Ce groupe n'est pas connecté à un thread."
+            text=_UNCONNECTED_GROUP_MSG
         )
         return
     

@@ -58,6 +58,25 @@ services:
       redis:
         condition: service_healthy
 
+  webhook-receiver:
+    build: .
+    container_name: ngl_clone_webhook_receiver
+    command: uvicorn app.webhook_app:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8000/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: ${START_PERIOD:-5}s
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 
   # Workers Celery (Tâches de fond)
   worker:

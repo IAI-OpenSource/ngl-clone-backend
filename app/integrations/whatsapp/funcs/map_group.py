@@ -8,7 +8,7 @@ from app.schemas.webhook_schemas import MessageEvent
 from app.services.thread_service import ThreadService
 from json import dumps
 
-from app.utils.whatsapp_utils import generate_random_numeric_password, generate_slug
+from app.utils.whatsapp_utils import generate_random_numeric_password, normalize_slug
 from app.integrations.whatsapp.messages import success_thread_add
 from app.worker.celery_app import celery_app
 from app.worker.tasks.base.workers_task_names import WorkersTaskNames
@@ -25,7 +25,7 @@ async def map_group_handler(ctx: EvolutionAPIClient, data: MessageEvent):
 
         payload = CreateThread(
             name=data.data.groupData.Name,
-            slug=generate_slug(data.data.groupData.Name),
+            slug=normalize_slug(data.data.groupData.Name),
             description=None,
             wa_group_jid=data.data.groupData.JID,
             wa_group_name=data.data.groupData.Name,

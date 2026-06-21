@@ -93,13 +93,9 @@ async def _send_message_to_group_async(message_id: UUID):
         thread = thread_res.data
         group_jid = thread.wa_group_jid
 
-        # Initialiser le client Evolution si nécessaire
-        try:
-            client = EvolutionAPIClient.get_instance()
-        except EvolutionNotInitializedError:
-            # Initialise avec les variables d'environnement gérées par config
-            EvolutionAPIClient.initialize(base_url=EVO_GLOBAL_API_URL, api_key=EVO_ACTIVE_INSTANCE_API_KEY)
-            client = EvolutionAPIClient.get_instance()
+
+        client = EvolutionAPIClient.get_instance()
+
 
         # Préparer mentions (JIDs)
         mention_jids = [m.wa_jid for m in mentioned_members if m.wa_jid is not None]

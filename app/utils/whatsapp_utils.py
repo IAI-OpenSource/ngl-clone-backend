@@ -35,7 +35,7 @@ def generate_random_numeric_password(length: int = 6) -> str:
     return ''.join(random.choices('0123456789', k=length))
 
 
-def generate_slug(text: str) -> str:
+def normalize_slug(text: str) -> str:
     text = text.lower()
 
     text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("utf-8")

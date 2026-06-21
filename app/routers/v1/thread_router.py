@@ -26,9 +26,7 @@ from app.services.auth_thread_service import AuthThreadService
 from app.schemas.thread_schemas import ThreadAuthPayload
 from app.auth.dependencies import get_connected_thread, safe_get_connected_thread
 from app.schemas.globals.api_utils_schemas import ApiUtilsSchemas
-from app.integrations.whatsapp.webhook_handler import WebhookHandler, get_webhook_handler
 
-# Import pour enregistrer les commandes WhatsApp (effet de bord)
 
 router = APIRouter(prefix="/threads", tags=[ApiTags.THREADS])
 
@@ -102,29 +100,6 @@ async def get_connected_thread_info(
     )
 
     return service_result.to_HTTP_api_base_response(reponse=response)
-
-
-@router.post(
-    "/webhook",
-    response_model=None,
-    summary="Webhook pour recevoir les événements WhatsApp",
-    include_in_schema=False,
-    status_code=204,
-)
-async def webhook(
-    request: Request, handler: Annotated[WebhookHandler, Depends(get_webhook_handler)]
-):
-    """
-    Traite les événements webhook WhatsApp.
-
-    Cette route reçoit les notifications de l'API Evolution WhatsApp
-    et les traite via le WebhookHandler.
-    """
-    # Lire le body de la requête
-    try:
-        await handler.handle_webhook(request)
-    except Exception as e:
-        print(f"Erreur lors du traitement du webhook: {e}")
 
 
 @router.get(

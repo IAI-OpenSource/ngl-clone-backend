@@ -65,10 +65,10 @@ class WebhookHandler:
             event = parse_webhook_event(payload)
 
             # Traiter selon le type
-            if isinstance(event, JoinedGroupEvent):
-                await self._handle_joined_group(event)
-            elif isinstance(event, MessageEvent):
+            if isinstance(event, MessageEvent):
                 await self._handle_message(event)
+            elif isinstance(event, JoinedGroupEvent):
+                await self._handle_joined_group(event)
             else:
                 raise ValueError(f"Type d'événement non géré: {event.event}")
 
@@ -136,7 +136,6 @@ class WebhookHandler:
         logger.info(f"Traitement de Message dans {event.data.Info.Chat}")
         msg = event.data.Message.conversation
         logger.info(f"Message : {msg}")
-        logger.info(f"Full Payload : {event.model_dump_json(indent=2)}")
         if msg is not None and msg.startswith("/"):
             text = msg.strip().split()
             command, args = text[0], text[1:]

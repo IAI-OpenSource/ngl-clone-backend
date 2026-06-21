@@ -35,7 +35,6 @@ COPY --from=builder /usr/local /usr/local
 COPY --from=builder /root/.cache /root/.cache
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    libpq-dev \
     curl \
     && DEBIAN_FRONTEND=noninteractive playwright install-deps chromium \
     && rm -rf /var/lib/apt/lists/*
