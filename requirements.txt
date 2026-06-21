@@ -15,6 +15,5 @@ alembic-postgresql-enum    # Optional dependency for Alembic to support PostgreS
 celery
 celery-types
 httpx
-pillow
 playwright
 jinja2
