@@ -98,11 +98,14 @@ def get_docs_message() -> str:
 
 NGL Clone est un projet open source pour créer et gérer des threads de discussion anonymes avec une intégration WhatsApp.
 
-🌐 *Liens utiles:*
-• Code source: [à compléter]
-• Documentation: [à compléter]
-• Contribuer: [à compléter]
+💀 Essayez pas de pirater le truc ou de faire de la merde svp, pardon c'est un truc juste pour s'amuser🤣
 
-💡 *Technologies:* Python, FastAPI, SQLAlchemy, WhatsApp API (Evolution)
+🌐 *Liens utiles:*
+• Code source Front : Pas encore (Merci benito 🤣) 
+• Code source Back : https://github.com/IAI-OpenSource/ngl-clone-backend 
+• Documentation: Aller lire le code 🤣
+• Contribuer: DM ou si t'as la flemme de DM ouvre directement une PR, si c'est bon on va merger
+
+💡 *Technologies:* Typescript, Python, React, FastAPI, SQLAlchemy, WhatsApp API (Evolution)
 
 🤝 *Contribuez:* Ce projet est open source, n'hésitez pas à contribuer !"""
