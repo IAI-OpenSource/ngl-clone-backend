@@ -168,6 +168,8 @@ class MessageEvent(BaseModel):
     """Événement Message structuré."""
     data: MessageData
     event: WebhookEventType = WebhookEventType.MESSAGE
+    args: List[str] = Field(default_factory=list)
+    command: Optional[str] = None
     instanceId: str
     instanceName: str
     instanceToken: str

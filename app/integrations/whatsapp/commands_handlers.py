@@ -1,13 +1,13 @@
-from app.whatsapp.base.client_handler import client_command_handler
-from app.whatsapp.base.commmand import Command
-from app.whatsapp.funcs.map_group import map_group_handler
-from app.whatsapp.funcs.thread_commands import (
+from app.integrations.whatsapp.base.client_handler import client_command_handler
+from app.integrations.whatsapp.base.commmand import Command
+from app.integrations.whatsapp.funcs.map_group import map_group_handler
+from app.integrations.whatsapp.funcs.thread_commands import (
     ngl_status_handler,
     lock_thread_handler,
     unlock_thread_handler,
     edit_thread_handler,
-    help_handler,
     docs_handler,
+    help_handler,
 )
 
 client_command_handler.include_command(

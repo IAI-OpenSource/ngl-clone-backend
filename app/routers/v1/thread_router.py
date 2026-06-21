@@ -26,10 +26,9 @@ from app.services.auth_thread_service import AuthThreadService
 from app.schemas.thread_schemas import ThreadAuthPayload
 from app.auth.dependencies import get_connected_thread, safe_get_connected_thread
 from app.schemas.globals.api_utils_schemas import ApiUtilsSchemas
-from app.handlers.webhook_handler import WebhookHandler, get_webhook_handler
+from app.integrations.whatsapp.webhook_handler import WebhookHandler, get_webhook_handler
 
 # Import pour enregistrer les commandes WhatsApp (effet de bord)
-from app.whatsapp import handlers  # noqa: F401
 
 router = APIRouter(prefix="/threads", tags=[ApiTags.THREADS])
 

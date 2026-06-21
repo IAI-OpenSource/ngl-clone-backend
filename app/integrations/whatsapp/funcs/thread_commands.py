@@ -3,15 +3,15 @@ from logging import getLogger
 from typing import Optional
 from uuid import UUID
 
-from app.cache.base.cache_wrapper import cache_manager, CacheWrapper
+from app.cache.base.cache_wrapper import cache_manager
 from app.cache.thread_cache import ThreadCache
 from app.db.session import AsyncSessionLocal
-from app.integrations.evolution_client import EvolutionAPIClient
+from app.integrations.whatsapp.base.evolution_client import EvolutionAPIClient
 from app.repositories.thread_repository import ThreadRepository
 from app.schemas.thread_schemas import ReadThread
 from app.schemas.webhook_schemas import MessageEvent
 from app.services.thread_service import ThreadService
-from app.whatsapp.messages import (
+from app.integrations.whatsapp.messages import (
     format_edit_confirmation,
     format_edit_error,
     format_lock_confirmation,

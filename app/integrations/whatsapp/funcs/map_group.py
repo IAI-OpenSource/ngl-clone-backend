@@ -2,14 +2,14 @@ from logging import getLogger
 
 from app.cache.base.cache_wrapper import cache_manager
 from app.db.session import AsyncSessionLocal
-from app.integrations.evolution_client import EvolutionAPIClient
+from app.integrations.whatsapp.base.evolution_client import EvolutionAPIClient
 from app.schemas.thread_schemas import CreateThread
 from app.schemas.webhook_schemas import MessageEvent
 from app.services.thread_service import ThreadService
 from json import dumps
 
 from app.utils.whatsapp_utils import generate_random_numeric_password, generate_slug
-from app.whatsapp.messages import success_thread_add
+from app.integrations.whatsapp.messages import success_thread_add
 from app.worker.celery_app import celery_app
 from app.worker.tasks.base.workers_task_names import WorkersTaskNames
 

@@ -13,15 +13,10 @@ from playwright.async_api import (
     ViewportSize,
 )
 
+from app.integrations.whatsapp.exceptions.card_gen_exceptions import CardGeneratorError, \
+    CardGeneratorNotInitializedError
+
 logger = logging.getLogger(__name__)
-
-
-class CardGeneratorError(Exception):
-    """Erreur lors de la génération d'une carte."""
-
-
-class CardGeneratorNotInitializedError(CardGeneratorError):
-    """Singleton non initialisé — appeler CardGenerator.initialize() d'abord."""
 
 
 class CardGenerator:

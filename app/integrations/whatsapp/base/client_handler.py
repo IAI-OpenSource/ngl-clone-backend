@@ -1,6 +1,6 @@
-from app.integrations.evolution_client import EvolutionAPIClient
+from app.integrations.whatsapp.base.evolution_client import EvolutionAPIClient
 from app.schemas.webhook_schemas import MessageEvent
-from app.whatsapp.base.commmand import Command
+from app.integrations.whatsapp.base.commmand import Command
 
 from logging import getLogger
 async def not_understand(ctx: EvolutionAPIClient, data: MessageEvent):
@@ -15,7 +15,7 @@ async def _send_unauthorized_message(evo: EvolutionAPIClient, group_jid: str):
     await evo.send_text(number=group_jid, text="Vous n'avez pas la permission d'exécuter cette commande.")
 
 logger = getLogger(__name__)
-class Whathsappclientwrapper:
+class WhatsAppCommandHandler:
 
     def __init__(self):
         self._commands_mapper: dict[str, Command] = {}
@@ -38,13 +38,16 @@ class Whathsappclientwrapper:
         logger.info(f"Commande {cmd.cmd_path} ajoutée avec succès")
 
     @staticmethod
-    async def _execute(cmd: Command, event: MessageEvent):
-        await cmd.cmd_func(EvolutionAPIClient.get_instance(), event)
+    async def _execute(cmd: Command, event: MessageEvent, evo_instance: EvolutionAPIClient):
+        await cmd.cmd_func(evo_instance, event)
 
-    async def process(self, event: MessageEvent, event_cmd: str):
+    async def process(self, event: MessageEvent):
         evo_instance = EvolutionAPIClient.get_instance()
-
-        cmd = self._commands_mapper.get(event_cmd, _default_command)
+        recept_cmd = event.command
+        if recept_cmd:
+            cmd = self._commands_mapper.get(recept_cmd, _default_command)
+        else:
+            cmd = _default_command
 
         if cmd.admin_only:
             # Vérifier si l'utilisateur est admin dans le groupe
@@ -55,8 +58,8 @@ class Whathsappclientwrapper:
             )
             if not is_user_admin:
                 return await _send_unauthorized_message(evo_instance, event.data.groupData.JID)
-        await self._execute(cmd, event)
+        await self._execute(cmd, event, evo_instance)
         return None
 
 
-client_command_handler: Whathsappclientwrapper = Whathsappclientwrapper()
+client_command_handler: WhatsAppCommandHandler = WhatsAppCommandHandler()

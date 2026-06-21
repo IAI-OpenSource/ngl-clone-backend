@@ -6,17 +6,17 @@ from uuid import UUID
 from celery import shared_task
 
 from app.db.session import AsyncSessionLocal
-from app.integrations.card_generator import CardGenerator
+from app.integrations.whatsapp.card_generator import CardGenerator
 from app.repositories.message_repository import MessageRepository
 from app.repositories.thread_repository import ThreadRepository
 from app.utils.format import formater_date_heure_en_francais
 from app.worker.tasks.base.async_loop_manager import task_async_loop_manager
 from app.worker.tasks.base.workers_task_names import WorkersTaskNames
-from app.integrations.evolution_client import (
+from app.integrations.whatsapp.base.evolution_client import (
     EvolutionAPIClient,
-    EvolutionError,
-    EvolutionNotInitializedError,
 )
+from app.integrations.whatsapp.exceptions.evolution_client_exceptions import EvolutionError, \
+    EvolutionNotInitializedError
 from app.core.config import EVO_GLOBAL_API_URL, EVO_ACTIVE_INSTANCE_API_KEY
 from app.db.models.enums.enums import WAStatus
 

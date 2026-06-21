@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.core.logging_config import setup_logging, silencer_loggers_externes
-from app.integrations.evolution_client import initialize_evolution_client, EvolutionAPIClient
+from app.integrations.whatsapp.base.evolution_client import initialize_evolution_client, EvolutionAPIClient
 from app.settings.dependencies_health import check_startup_dependencies
 
 

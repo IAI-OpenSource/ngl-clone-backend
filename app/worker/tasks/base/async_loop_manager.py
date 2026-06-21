@@ -4,8 +4,8 @@ from logging import getLogger
 from pathlib import Path
 from typing import TypeVar, Coroutine
 
-from app.integrations.card_generator import CardGenerator
-from app.integrations.evolution_client import (
+from app.integrations.whatsapp.card_generator import CardGenerator
+from app.integrations.whatsapp.base.evolution_client import (
     EvolutionAPIClient,
     initialize_evolution_client,
 )
@@ -86,7 +86,7 @@ class AsyncLoopManager:
             # __file__ -> .../app/worker/tasks/base/async_loop_manager.py
             # parents[3] correspond au dossier 'app'
             project_app_dir = Path(__file__).resolve().parents[3]
-            templates_dir = str(project_app_dir / "static")
+            templates_dir = str(project_app_dir / "integrations/whatsapp/templates")
 
             logger.info("AsyncLoopManager: templates_dir calculé pour CardGenerator = %s (exists=%s)", templates_dir, Path(templates_dir).exists())
 
