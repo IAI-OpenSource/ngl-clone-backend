@@ -10,6 +10,7 @@ class BaseCacheEntity:
     SESSION = "entity:session:{id}"
     MESSAGE = "entity:message:{id}"
     THREAD = "entity:thread:{id}"
+    THREAD_BY_WA_GROUP = "entity:thread:wa_group:{wa_group_jid}"
     MEMBER = "entity:member:{id}"
 
 
@@ -30,6 +31,7 @@ class AvailableCacheKeys(str, Enum):
 
     # Clés de cache pour les threads
     THREAD_OBJECT = BaseCacheEntity.THREAD  # Clé pour un thread spécifique
+    THREAD_BY_WA_GROUP_OBJECT = BaseCacheEntity.THREAD_BY_WA_GROUP  # Clé pour un thread par JID WhatsApp
 
     INTERNAL_THREAD_RAW_OBJECT = BaseCacheEntity.THREAD + ":raw"  # Clé pour les données brutes d'un thread
 

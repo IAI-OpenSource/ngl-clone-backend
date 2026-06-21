@@ -232,6 +232,37 @@ class ThreadService:
             service_name=self._service_name,
         )
 
+
+    async def service_find_thread_by_wa_group_jid(
+        self, wa_group_jid: str
+    ) -> DefaultAppServiceResult[ReadThread]:
+        """Logique métier de récupération d'un thread par JID du groupe WhatsApp."""
+        
+        thread_from_cache = await self.__thread_cache.get_thread_by_wa_group_from_cache(wa_group_jid)
+        if thread_from_cache is not None:
+            return ServiceResult.service_success(
+                data=thread_from_cache,
+                service_name=self._service_name
+            )
+        
+        thread_repo = await self.__thread_repo.get_thread_by_wa_group_jid(wa_group_jid)
+        
+        if thread_repo.is_error():
+            logger.error(f"Erreur: {thread_repo.error}")
+            return thread_repo.to_service_error(service_name=self._service_name)
+        
+        read_thread = self._build_read_thread_schemas(thread_repo.data)
+
+        await self.__thread_cache.set_thread_by_wa_group_in_cache(
+            wa_group_jid=wa_group_jid, thread=read_thread, ttl=CacheDuration.TWENTY_MINUTES
+        )
+        
+        return ServiceResult.service_success(
+            data=read_thread,
+            service_name=self._service_name,
+        )
+
+
     async def service_get_thread_members(
         self, thread_id: UUID, include_inactive: bool = False
     ) -> DefaultAppServiceResult[List[ReadMember]]:

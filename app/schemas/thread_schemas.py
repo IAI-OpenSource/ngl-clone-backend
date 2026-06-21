@@ -74,8 +74,9 @@ class ReadThreadWithUserConnectionInfo(ReadThread):
 
     is_connected: bool = Field(default=False, description="Indique si l'utilisateur est connecté à ce thread")
 
-class InternalForLoginReadThread(BaseModel):
-    """"""
+class InternalReadThread(BaseModel):
+    """Schéma interne pour la lecture d'un thread - expose tous les champs nécessaires au back."""
+
     id: UUID = Field(description="ID unique du thread")
     name: str = Field(description="Nom du thread")
     slug: str = Field(description="Slug unique du thread")
@@ -93,7 +94,7 @@ class InternalForLoginReadThread(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-InternalForLoginReadThread.model_rebuild()
+InternalReadThread.model_rebuild()
 
 
 # Schémas enveloppes pour les réponses API

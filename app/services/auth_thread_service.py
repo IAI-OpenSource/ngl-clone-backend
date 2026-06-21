@@ -18,7 +18,7 @@ from app.core.config import (
 )
 from app.globals.businnes_error import AppError, AppErrorType
 from app.schemas.globals.utils_schemas import StringMessage
-from app.schemas.thread_schemas import InternalForLoginReadThread, ThreadAuthPayload
+from app.schemas.thread_schemas import InternalReadThread, ThreadAuthPayload
 from app.utils.security_utils import verify_password
 
 from . import ServiceResult, DefaultAppServiceResult
@@ -48,7 +48,7 @@ class AuthThreadService:
     ) -> DefaultAppServiceResult[StringMessage]:
         """Logique métier de connexion à un thread (récupération du thread et de ses messages)."""
 
-        searched_thread: InternalForLoginReadThread
+        searched_thread: InternalReadThread
 
         cache_res = await self.__thread_cache.get_raw_thread_from_cache(thread_id)
 
@@ -61,7 +61,7 @@ class AuthThreadService:
                 logger.error(f"Erreur: {thread_repo.error}")
                 return thread_repo.to_service_error(service_name=self._service_name)
 
-            searched_thread = InternalForLoginReadThread.model_validate(
+            searched_thread = InternalReadThread.model_validate(
                 thread_repo.data
             )
 
