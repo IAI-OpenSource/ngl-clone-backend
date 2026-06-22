@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import Depends, status, HTTPException, Response
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import HTTPConnection
 
@@ -116,7 +117,16 @@ class _ThreadAuthDependencies:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Clé d'accès invalide"
             )
 
-        return ThreadAuthPayload.model_validate(payload)
+        try:
+            thread_payload = ThreadAuthPayload.model_validate(payload)
+        except ValidationError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token Invalide bro, reconnecte toi"
+            )
+        else:
+            return thread_payload
+
 
     def safe_get_connected_thread(self) -> ThreadAuthPayload | None:
         """Comme get_connected_thread mais au lieu de raise une HTTPException en cas d'erreur, elle return None"""

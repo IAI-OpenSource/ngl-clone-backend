@@ -17,4 +17,3 @@ celery-types
 httpx
 playwright
 jinja2
-slowapi

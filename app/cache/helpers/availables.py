@@ -12,6 +12,7 @@ class BaseCacheEntity:
     THREAD = "entity:thread:{id}"
     THREAD_BY_WA_GROUP = "entity:thread:wa_group:{wa_group_jid}"
     MEMBER = "entity:member:{id}"
+    RATE_LIMIT = "rate_limit:user:{user_id}:messages"
 
 
 class AvailableCacheKeys(str, Enum):
@@ -37,6 +38,9 @@ class AvailableCacheKeys(str, Enum):
 
     # Clés de cache pour les membres
     MEMBER_OBJECT = BaseCacheEntity.MEMBER  # Clé pour un membre spécifique
+
+    # Clés de cache pour le rate limiting
+    RATE_LIMIT_USER_MESSAGES = BaseCacheEntity.RATE_LIMIT  # Clé pour le rate limiting des messages par utilisateur
 
     # Clés de cache pour les listes
     THREADS_LIST = "entity:thread:list"  # Clé pour la liste de tous les threads

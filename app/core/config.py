@@ -57,3 +57,7 @@ JWT_THREAD_ACCESS_ID: str = "_SECURE_THREAD_TOKEN"
 ## url redis
 REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
 LOG_DIR = "logs"
+
+# Rate limiting configuration
+RATE_LIMIT_MESSAGES_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_MESSAGES_PER_MINUTE", 5))
+RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", 60))

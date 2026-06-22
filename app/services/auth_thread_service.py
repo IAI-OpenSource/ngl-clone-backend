@@ -44,9 +44,17 @@ class AuthThreadService:
         self._service_name = ServicesNames.THREAD_SERVICE
 
     async def service_connect_thread(
-        self, thread_id: UUID, thread_password: str | None = None
+        self, thread_id: UUID, current_connected_thread: ThreadAuthPayload | None, thread_password: str | None = None
     ) -> DefaultAppServiceResult[StringMessage]:
         """Logique métier de connexion à un thread (récupération du thread et de ses messages)."""
+
+        # Vérifier si déjà connecté à ce thread
+        if current_connected_thread is not None and current_connected_thread.thread_id == str(thread_id):
+            # Déjà connecté au thread, retourner 200 sans générer de nouveau token
+            return ServiceResult.service_success(
+                data=StringMessage(message="Déjà connecté à ce thread"),
+                service_name=self._service_name,
+            )
 
         searched_thread: InternalReadThread
 
@@ -68,7 +76,6 @@ class AuthThreadService:
             await self.__thread_cache.set_raw_thread_in_cache(
                 thread=searched_thread, ttl=CacheDuration.TWENTY_MINUTES
             )
-
 
         if searched_thread.password_hash and (thread_password is None or not verify_password(
                 thread_password, searched_thread.password_hash
@@ -99,7 +106,6 @@ class AuthThreadService:
             value=access_token,
             age=REFRESH_TOKEN_EXPIRES_SECONDES,
         )
-
 
         return ServiceResult.service_success(
             data=StringMessage(message="Connexion au thread réusssi"),

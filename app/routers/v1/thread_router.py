@@ -161,11 +161,12 @@ async def connect_to_a_thread(
     body: ThreadAuthRequest,
     response: Response,
     thread_service: Annotated[AuthThreadService, Depends(get_auth_thread_service)],
+    current_thread: Annotated[ThreadAuthPayload | None, Depends(safe_get_connected_thread)],
 ) -> ApiBaseResponse[StringMessage, AppError]:
     """Route pour se connecter à un thread par son ID."""
 
     service_result = await thread_service.service_connect_thread(
-        thread_id=thread_id, thread_password=body.password
+        thread_id=thread_id, thread_password=body.password, current_connected_thread=current_thread
     )
 
     return service_result.to_HTTP_api_base_response(reponse=response)

@@ -9,6 +9,7 @@ class AppErrorType(str, Enum):
     UNKNOWN_ERROR = "UNKNOWN_ERROR"
     BAD_REQUEST = "BAD_REQUEST"
     UNAUTHORIZED = "UNAUTHORIZED"
+    RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
 
 
 class AppError(BaseModel):

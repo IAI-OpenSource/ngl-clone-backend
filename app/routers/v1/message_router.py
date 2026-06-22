@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.cache.base.cache_wrapper import CacheWrapper, get_redis
 from app.db.session import get_db
 from app.globals.api_tags import ApiTags
-from app.globals.businnes_error import AppError
 from app.schemas.globals.api_base_response import ApiBaseResponse
 from app.schemas.message_schemas import (
     CreateMessage,
@@ -20,6 +19,7 @@ from app.services.message_service import MessageService
 from app.schemas.thread_schemas import ThreadAuthPayload
 from app.auth.dependencies import get_connected_thread
 from app.schemas.globals.api_utils_schemas import ApiUtilsSchemas
+from app.globals.businnes_error import AppError
 
 router = APIRouter(prefix="/messages", tags=[ApiTags.MESSAGES])
 
@@ -40,10 +40,12 @@ async def create_message(
     thread: Annotated[ThreadAuthPayload, Depends(get_connected_thread)],
     message_service: Annotated[MessageService, Depends(get_message_service)],
 ) -> ApiBaseResponse[ReadMessage, AppError]:
-    """Route pour ajouter un message à un thread."""
+    """Route pour ajouter un message à un thread auquel on est connecté. Le thread est déterminé par le token d'authentification fourni dans l'en-tête de la requête.
+    **La route retourne un 429 en cas de RateLimiting**
+    """
 
     service_result = await message_service.service_create_message(
-        message_data=message_data, thread_id=thread.thread_id
+        message_data=message_data, user_payload=thread
     )
 
     return service_result.to_HTTP_api_base_response(reponse=response)
