@@ -2,13 +2,13 @@
 from datetime import timedelta
 from logging import getLogger
 
-from app.cache.base.cache_key import CacheKey
 from app.cache.helpers.availables import AvailableCacheKeys
 from app.core.config import RATE_LIMIT_MESSAGES_PER_MINUTE, RATE_LIMIT_WINDOW_SECONDS
 from app.globals.businnes_error import AppError, AppErrorType
 from app.schemas.thread_schemas import ThreadAuthPayload
 
 from . import ServiceResult
+from ..cache.helpers.keys_factory import CacheKeysFactory
 
 logger = getLogger(__name__)
 
@@ -19,10 +19,7 @@ class RateLimiterService:
     def __init__(self, cache):
         """Initialise le service de rate limiting avec une instance de cache."""
         self.__cache = cache
-        self._rate_limit_key = CacheKey.new_key(
-            key=AvailableCacheKeys.RATE_LIMIT_USER_MESSAGES,
-            number_of_placeholders=1
-        )
+        self._rate_limit_key = CacheKeysFactory.get_cache_key(AvailableCacheKeys.RATE_LIMIT_USER_MESSAGES)
         self._max_messages = RATE_LIMIT_MESSAGES_PER_MINUTE
         self._window_seconds = RATE_LIMIT_WINDOW_SECONDS
 
@@ -39,7 +36,7 @@ class RateLimiterService:
         Returns:
             ServiceResult avec True si la requête est autorisée, False si rate limité
         """
-        identifier_id = str(thread_auth.identifier_id)
+        identifier_id = thread_auth.identifier_id
         cache_key = self._rate_limit_key.set_arguments(user_id=identifier_id)
         
         try:
@@ -85,7 +82,7 @@ class RateLimiterService:
         Returns:
             Nombre de messages restants dans la fenêtre actuelle
         """
-        identifier_id = str(thread_auth.identifier_id)
+        identifier_id = thread_auth.identifier_id
         cache_key = self._rate_limit_key.set_arguments(user_id=identifier_id)
         
         try:

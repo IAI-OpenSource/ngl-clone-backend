@@ -154,6 +154,7 @@ class ThreadService:
         optionnal_user_connected_thread: ThreadAuthPayload | None = None,
     ) -> DefaultAppServiceResult[ReadThreadWithUserConnectionInfo]:
         """Logique métier de récupération d'un thread par slug."""
+        
 
         thread_repo = await self.__thread_repo.get_thread_by_slug(slug=slug)
 

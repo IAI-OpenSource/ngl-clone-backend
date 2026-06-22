@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from logging import getLogger
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -97,6 +97,7 @@ class AuthThreadService:
                 thread_id=str(searched_thread.id),
                 slug=searched_thread.slug,
                 exp=datetime.now(timezone.utc) + TOKEN_TTL,
+                identifier_id=str(uuid4())
             ).model_dump(),
             enc_dec_key=ACCESS_SECRET_KEY,
         )

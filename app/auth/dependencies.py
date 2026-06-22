@@ -100,6 +100,10 @@ class _ThreadAuthDependencies:
         self._thread_svc = AuthThreadService(self.db, cache, response, request)
 
     def get_connected_thread(self) -> ThreadAuthPayload:
+
+        def remove_cookie():
+            self.cookie.delete_cookie(cookie_id=JWT_THREAD_ACCESS_ID)
+
         access_token = self.cookie.get_cookie(cookie_id=JWT_THREAD_ACCESS_ID)
 
         if access_token is None:
@@ -113,6 +117,7 @@ class _ThreadAuthDependencies:
         )
 
         if payload is None:
+            remove_cookie()
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Clé d'accès invalide"
             )
@@ -120,6 +125,7 @@ class _ThreadAuthDependencies:
         try:
             thread_payload = ThreadAuthPayload.model_validate(payload)
         except ValidationError:
+            remove_cookie()
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token Invalide bro, reconnecte toi"

@@ -96,7 +96,7 @@ async def get_connected_thread_info(
     """
 
     service_result = await thread_service.service_find_thread_by_id(
-        thread_id=UUID(thread.thread_id)
+        thread_id=UUID(thread.thread_id), optionnal_user_connected_thread=thread
     )
 
     return service_result.to_HTTP_api_base_response(reponse=response)

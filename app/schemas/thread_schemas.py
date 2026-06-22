@@ -6,7 +6,6 @@ Ces schémas définissent quels attributs sont exposés au front.
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
-import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -41,7 +40,7 @@ class UpdateThread(BaseModel):
 class ThreadAuthPayload(BaseModel):
     thread_id: str
     slug: str
-    identifier_id: UUID = Field(description="Identifiant unique aléatoire pour ce client", default_factory=uuid.uuid4)
+    identifier_id: str
     exp: datetime
 
 class ThreadAuthRequest(BaseModel):
