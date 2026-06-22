@@ -19,7 +19,7 @@ def format_ngl_status(thread: ReadThread) -> str:
     
     last_sync = formater_date_heure_en_francais(thread.last_wa_sync_at) if thread.last_wa_sync_at else "Jamais"
     created = formater_date_heure_en_francais(thread.created_at)
-    
+    last_update_at = formater_date_heure_en_francais(thread.updated_at)
     description = thread.description or "Aucune"
     
     return f"""📡 *Statut du Thread*
@@ -32,6 +32,7 @@ def format_ngl_status(thread: ReadThread) -> str:
 {lock_emoji} *Verrouillé:* {lock_text}
 
 📅 *Créé le:* {created}
+✏️ *Dernière modification:* {last_update_at}
 🔄 *Dernière sync:* {last_sync}"""
 
 
