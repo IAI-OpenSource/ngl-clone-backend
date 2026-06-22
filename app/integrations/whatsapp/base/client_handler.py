@@ -1,3 +1,5 @@
+from asyncio import gather
+
 from app.integrations.whatsapp.base.evolution_client import EvolutionAPIClient
 from app.schemas.webhook_schemas import MessageEvent
 from app.integrations.whatsapp.base.commmand import Command
@@ -11,11 +13,20 @@ _default_command = Command(
     cmd_path="",
     admin_only=False
 )
+
 async def _send_unauthorized_message(evo: EvolutionAPIClient, group_jid: str):
-    await evo.send_text(
-        number=group_jid,
-        text="Tu n'as pas assez de pouvoir pour éxecuter cette commande, tu es Admin ? Non tu n'es pas Admin, et tu veux faire quoi ? Tu n'es rien🤣"
-    )
+    tasks = [
+        evo.send_text(
+            number=group_jid,
+            text="Tu n'as pas assez de pouvoir pour éxecuter cette commande, tu es Admin ? Non tu n'es pas Admin, et tu veux faire quoi ? Tu n'es rien🤣"
+        ),
+        evo.send_sticker(
+            number=group_jid,
+            url="http://ngl_clone_webhook_receiver:8000/sticker_webp",
+        )
+    ]
+    await gather(*tasks, return_exceptions=True)
+
 
 logger = getLogger(__name__)
 class WhatsAppCommandHandler:

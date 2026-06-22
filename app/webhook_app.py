@@ -1,3 +1,7 @@
+import os
+
+from starlette.responses import FileResponse
+
 try:
     import uvloop
 
@@ -12,7 +16,7 @@ except (
 
 from typing import Annotated
 
-from fastapi import Request
+from fastapi import Request, HTTPException
 
 from app.integrations.whatsapp.webhook_handler import WebhookHandler, get_webhook_handler
 
@@ -47,3 +51,12 @@ async def webhook(
         await handler.handle_webhook(request)
     except Exception as e:
         print(f"Erreur lors du traitement du webhook: {e}")
+
+@app.get("/sticker_webp")
+async def raaaaa():
+    file_path = os.path.join(os.path.dirname(__file__), "static", "unauthorized-sticker.webp")
+
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Image introuvable")
+
+    return FileResponse(file_path, media_type="image/webp")
