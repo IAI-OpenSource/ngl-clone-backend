@@ -5,20 +5,18 @@ from uuid import UUID
 
 from celery import shared_task
 
+from app.db.models.enums.enums import WAStatus
 from app.db.session import AsyncSessionLocal
+from app.integrations.whatsapp.base.evolution_client import (
+    EvolutionAPIClient,
+)
 from app.integrations.whatsapp.card_generator import CardGenerator
+from app.integrations.whatsapp.exceptions.evolution_client_exceptions import EvolutionError
 from app.repositories.message_repository import MessageRepository
 from app.repositories.thread_repository import ThreadRepository
 from app.utils.format import formater_date_heure_en_francais
 from app.worker.tasks.base.async_loop_manager import task_async_loop_manager
 from app.worker.tasks.base.workers_task_names import WorkersTaskNames
-from app.integrations.whatsapp.base.evolution_client import (
-    EvolutionAPIClient,
-)
-from app.integrations.whatsapp.exceptions.evolution_client_exceptions import EvolutionError, \
-    EvolutionNotInitializedError
-from app.core.config import EVO_GLOBAL_API_URL, EVO_ACTIVE_INSTANCE_API_KEY
-from app.db.models.enums.enums import WAStatus
 
 logger = getLogger(__name__)
 
@@ -98,7 +96,7 @@ async def _send_message_to_group_async(message_id: UUID):
 
 
         # Préparer mentions (JIDs)
-        mention_jids = [m.wa_jid for m in mentioned_members if m.wa_jid is not None]
+        mention_jids = [m.display_name or m.wa_jid for m in mentioned_members if m.wa_jid is not None]
 
         # Construire le texte avec mentions formatées (@nom ou @phonenumber)
         # Cela permet l'affichage visuel des mentions dans WhatsApp
@@ -111,7 +109,7 @@ async def _send_message_to_group_async(message_id: UUID):
                 time_stamp=message.created_at,
                 mentioned_names=mention_jids,
             )
-            sent = await client.send_image(number=group_jid, caption=message.content, url=image_to_send, mention_jids=mention_jids)
+            sent = await client.send_image(number=group_jid, caption="📣 Nouveau Message", url=image_to_send, mention_jids=mention_jids)
 
             # Mettre à jour le message en base avec le statut et l'ID WA
             await message_repo.update_message(message_id=message_id, wa_message_id=sent.message_id, wa_status=WAStatus.SENT)
