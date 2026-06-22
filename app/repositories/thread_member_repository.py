@@ -9,14 +9,13 @@ from logging import getLogger
 from typing import Optional
 from uuid import UUID
 
+from fastapi import status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
-from fastapi import status
 
-from app.db.models.thread_member import ThreadMember
-from app.db.models.member import Member
 from app.db.models.enums.enums import WAMemberRole
+from app.db.models.thread_member import ThreadMember
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
 

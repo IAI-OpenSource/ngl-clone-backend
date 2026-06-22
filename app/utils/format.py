@@ -1,5 +1,4 @@
 from datetime import datetime
-import locale
 
 DAYS_FR = {
     0: "Lundi",

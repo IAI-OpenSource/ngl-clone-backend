@@ -40,6 +40,7 @@ class UpdateThread(BaseModel):
 class ThreadAuthPayload(BaseModel):
     thread_id: str
     slug: str
+    identifier_id: str
     exp: datetime
 
 class ThreadAuthRequest(BaseModel):

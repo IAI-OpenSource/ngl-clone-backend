@@ -4,13 +4,12 @@
 
 from datetime import datetime
 from typing import Optional, List
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from uuid import UUID
-
 from app.db.models.enums.enums import SexeType, UserType
-from app.schemas.globals.api_base_response import ApiBaseResponse, DefaultAppApiResponse
+from app.schemas.globals.api_base_response import DefaultAppApiResponse
 
 
 class CreateUser(BaseModel):

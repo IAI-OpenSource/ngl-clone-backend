@@ -42,6 +42,10 @@ class CacheKeysFactory:
         ),
         AvailableCacheKeys.INTERNAL_THREAD_RAW_OBJECT: CacheKey.new_key(
             AvailableCacheKeys.INTERNAL_THREAD_RAW_OBJECT, 1
+        ),
+        AvailableCacheKeys.RATE_LIMIT_USER_MESSAGES: CacheKey.new_key(
+            key=AvailableCacheKeys.RATE_LIMIT_USER_MESSAGES,
+            number_of_placeholders=1
         )
     }
 

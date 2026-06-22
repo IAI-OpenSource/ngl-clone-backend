@@ -97,7 +97,7 @@ class ThreadService:
                 error_type=AppErrorType.UNKNOWN_ERROR
             ), status_code=400)
 
-        if getattr(usable_thread, "is_currently_locked", False):
+        if usable_thread.is_currently_locked:
             logger.info(f"Thread {usable_thread.id} est actuellement verrouillé. Opération interdite.")
             return ServiceResult.service_failure(error=AppError(
                 error_message="Ce thread est actuellement bloqué, vous ne pouvez pas poster de nouveaux messages.",
@@ -154,6 +154,7 @@ class ThreadService:
         optionnal_user_connected_thread: ThreadAuthPayload | None = None,
     ) -> DefaultAppServiceResult[ReadThreadWithUserConnectionInfo]:
         """Logique métier de récupération d'un thread par slug."""
+        
 
         thread_repo = await self.__thread_repo.get_thread_by_slug(slug=slug)
 

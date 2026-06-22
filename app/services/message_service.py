@@ -11,6 +11,7 @@ from app.schemas.message_schemas import CreateMessage, ReadMessage
 from app.schemas.thread_schemas import ThreadAuthPayload
 
 from . import ServiceResult, DefaultAppServiceResult
+from .rate_limiter_service import RateLimiterService
 from .thread_service import ThreadService
 from ..cache.base.cache_wrapper import CacheWrapper
 from ..db.models.member import Member
@@ -122,16 +123,29 @@ class MessageService:
         )
 
     async def service_create_message(
-        self, message_data: CreateMessage, thread_id: str
+        self, message_data: CreateMessage, user_payload: ThreadAuthPayload,
     ) -> DefaultAppServiceResult[ReadMessage]:
         """Logique métier pour ajouter un message à un thread."""
-        thread_id_uuid = UUID(thread_id)
+        thread_id_uuid = UUID(user_payload.thread_id)
+
+        # Vérifier le rate limiting
+        rate_limit_service = RateLimiterService(self.__cache)
+
+        rate_limit_check_res = await rate_limit_service.check_message_rate_limit(
+            user_payload
+        )
+        if rate_limit_check_res.is_error():
+            return ServiceResult.service_failure(
+                error=rate_limit_check_res.error,
+                status_code=rate_limit_check_res.status_code
+            )
 
         # Vérifier que le thread autorise la création de nouveaux messages
         thread_svc = ThreadService(self.__db, self.__cache)
         verif = await thread_svc.verify_thread_allows_posting(thread_id_uuid)
         if verif.is_error():
             return ServiceResult.service_failure(error=verif.error, status_code=verif.status_code)
+
 
         message_repo = await self.__message_repo.insert_message(
             thread_id=thread_id_uuid,

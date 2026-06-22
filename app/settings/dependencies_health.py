@@ -31,7 +31,7 @@ async def _check_cache() -> None:
 
 async def _run_dependency_check(
     name: str, check: Callable[[], Awaitable[None]]
-) -> None:
+) -> bool:
     try:
         await asyncio.wait_for(check(), timeout=DEPENDENCY_CHECK_TIMEOUT_SECONDS)
     except Exception as exc:
@@ -41,12 +41,15 @@ async def _run_dependency_check(
             exc.__class__.__name__,
             exc,
         )
+        return False
     else:
         logger.info("Dependance %s disponible au demarrage", name)
+        return True
 
 
-async def check_startup_dependencies() -> None:
-    await asyncio.gather(
+async def check_startup_dependencies() -> bool:
+    results = await asyncio.gather(
         _run_dependency_check("database", _check_database),
         _run_dependency_check("cache", _check_cache),
     )
+    return all(results)

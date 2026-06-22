@@ -24,7 +24,7 @@ from app.utils.whatsapp_utils import normalize_slug
 
 logger = getLogger(__name__)
 
-_UNCONNECTED_GROUP_MSG = "⚠️ Ce groupe n'est pas connecté à un thread. Utilisez * /map_group * pour l'associer."
+_UNCONNECTED_GROUP_MSG = "⚠️ Ce groupe n'est pas connecté à un thread. Utilisez */map_group* pour l'associer."
 
 async def _invalid_thread_cache(thread_cache: ThreadCache, thread_id: UUID, wa_group_jid: str):
     """
