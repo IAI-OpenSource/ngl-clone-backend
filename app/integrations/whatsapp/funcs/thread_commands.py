@@ -1,4 +1,5 @@
 from asyncio import gather
+from json import dumps
 from logging import getLogger
 from typing import Optional
 from uuid import UUID
@@ -21,6 +22,8 @@ from app.integrations.whatsapp.messages import (
     get_docs_message,
 )
 from app.utils.whatsapp_utils import normalize_slug
+from app.worker.celery_app import celery_app
+from app.worker.tasks.base.workers_task_names import WorkersTaskNames
 
 logger = getLogger(__name__)
 
@@ -388,3 +391,38 @@ async def docs_handler(ctx: EvolutionAPIClient, data: MessageEvent):
     
     msg = get_docs_message()
     await ctx.send_text(number=wa_group_jid, text=msg)
+
+async def sync_thread(ctx: EvolutionAPIClient, data: MessageEvent):
+    """
+    Handler pour la commande /sync-thread.
+    Synchronise les membres du thread avec le groupe WhatsApp.
+    """
+    wa_group_jid = data.data.groupData.JID
+
+    logger.info(f"Exécution de /sync-thread pour le groupe {wa_group_jid}")
+
+    thread = await _get_thread_by_group_jid(wa_group_jid)
+
+    if thread is None:
+        await ctx.send_text(
+            number=wa_group_jid,
+            text=_UNCONNECTED_GROUP_MSG
+        )
+        return
+
+    await ctx.send_text(
+        number=wa_group_jid,
+        text="🔄 La synchronisation des membres du thread a été lancée, vous serez notifié une fois terminé, "
+             "si vous n'etes pas notifié c'est qu'il y'a un bug et que çà a planté et que je suis nul🤣"
+    )
+
+    participants_list = [p.model_dump() for p in data.data.groupData.Participants]
+    task_data = dumps(participants_list)
+
+    logger.info(
+        f"Envoi de la tâche de synchronisation des membres pour le thread {thread.id} avec {len(participants_list)} participants"
+    )
+    celery_app.send_task(
+        WorkersTaskNames.SYNC_THREAD_MEMBERS_FROM_GROUP,
+        kwargs={"group_participants": task_data, "thread_id": str(thread.id), "must_send_response" : True},
+    )

@@ -8,6 +8,7 @@ from app.integrations.whatsapp.funcs.thread_commands import (
     edit_thread_handler,
     docs_handler,
     help_handler,
+    sync_thread,
 )
 
 client_command_handler.include_command(
@@ -80,5 +81,13 @@ client_command_handler.include_command(
         "/docs",
         False,
         docs_handler
+    )
+)
+
+client_command_handler.include_command(
+    Command(
+        "/sync-thread",
+        False,
+        sync_thread
     )
 )
