@@ -10,6 +10,8 @@ def setup_app_cors(app: FastAPI) -> None:
     # Liste des origines autorisées
     origins = ALLOWED_ORIGINS.split(",")
 
+    print(f"Configuration CORS : {origins}")
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
