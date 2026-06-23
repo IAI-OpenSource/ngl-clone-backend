@@ -223,6 +223,22 @@ class CacheWrapper:
 
         await self._connection.delete(self._format_cache_key(key))
 
+    async def delete_by_pattern(self, pattern: str) -> int:
+        """
+        Supprime toutes les clés Redis correspondant à un pattern (utilise SCAN pour ne pas bloquer).
+
+        Args:
+            pattern: Le pattern glob à utiliser (ex: "entity:thread:{id}:messages:cursor:*")
+
+        Returns:
+            Le nombre de clés supprimées
+        """
+        deleted = 0
+        async for key in self._connection.scan_iter(match=pattern, count=100):
+            await self._connection.delete(key)
+            deleted += 1
+        return deleted
+
     async def __get_from_cache(self, key: CacheKey) -> Optional[str]:
         """
         Récupère une valeur du cache en utilisant une clé spécifique

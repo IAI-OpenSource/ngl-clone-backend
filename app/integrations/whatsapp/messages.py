@@ -19,7 +19,7 @@ def format_ngl_status(thread: ReadThread) -> str:
     
     last_sync = formater_date_heure_en_francais(thread.last_wa_sync_at) if thread.last_wa_sync_at else "Jamais"
     created = formater_date_heure_en_francais(thread.created_at)
-    
+    last_update_at = formater_date_heure_en_francais(thread.updated_at)
     description = thread.description or "Aucune"
     
     return f"""📡 *Statut du Thread*
@@ -32,6 +32,7 @@ def format_ngl_status(thread: ReadThread) -> str:
 {lock_emoji} *Verrouillé:* {lock_text}
 
 📅 *Créé le:* {created}
+✏️ *Dernière modification:* {last_update_at}
 🔄 *Dernière sync:* {last_sync}"""
 
 
@@ -80,6 +81,7 @@ def get_help_message() -> str:
     return """📚 *Commandes Disponibles*
 
 🔍 */ngl* - Voir le statut du thread
+🔄 */sync-thread* - Synchroniser manuellement les membres du thread avec WhatsApp *(Admin)*
 
 🔒 */lock* - Verrouiller le thread *(Admin)*
 🔓 */unlock* - Déverrouiller le thread *(Admin)*
@@ -106,6 +108,6 @@ NGL Clone est un projet open source pour créer et gérer des threads de discuss
 • Documentation: Aller lire le code 🤣
 • Contribuer: DM ou si t'as la flemme de DM ouvre directement une PR, si c'est bon on va merger
 
-💡 *Technologies:* Typescript, Python, React, FastAPI, SQLAlchemy, WhatsApp API (Evolution)
+💡 *Technos:* Typescript, Python, React, FastAPI, SQLAlchemy, WhatsApp API (Evolution)
 
-🤝 *Contribuez:* Ce projet est open source, n'hésitez pas à contribuer !"""
+🤝 *Contribuez:* Ce projet est open source, n'hésitez pas à contribuer pour améliorer le spaghetti !"""

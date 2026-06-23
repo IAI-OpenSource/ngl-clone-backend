@@ -11,7 +11,7 @@ from app.cache.helpers.keys_factory import CacheKeysFactory
 from app.globals.cache_duration import CacheDuration
 
 from app.schemas.thread_schemas import ReadThread
-from app.schemas.message_schemas import ReadMessage
+from app.schemas.message_schemas import ReadMessage, PaginatedMessagesResponse
 from app.schemas.member_schemas import ReadMember
 from app.schemas.thread_schemas import InternalReadThread
 
@@ -262,6 +262,104 @@ class ThreadCache:
             logger.info(f"Cache des messages du thread {thread_id} invalidé")
         except Exception as e:
             CacheUtils.traiter_exceptions(e, logger)
+
+    # Méthodes pour la pagination par curseur des messages
+    @staticmethod
+    def _create_paginated_messages_cache_key(
+        thread_id: UUID, cursor: Optional[str], limit: int
+    ) -> CacheKey:
+        """Crée une clé de cache pour les messages paginés d'un thread.
+        
+        Args:
+            thread_id: ID du thread
+            cursor: Curseur de pagination (peut être None pour la première page)
+            limit: Nombre maximal de messages par page
+
+        Returns:
+            CacheKey: Instance de CacheKey pour les messages paginés
+        """
+        cursor_str = cursor or "first_page"
+        return CacheKeysFactory.get_cache_key(
+            AvailableCacheKeys.MESSAGES_BY_THREAD_PAGINATED
+        ).set_arguments(id=str(thread_id), cursor=cursor_str, limit=str(limit))
+
+    async def set_paginated_messages_in_cache(
+        self,
+        thread_id: UUID,
+        paginated_response: PaginatedMessagesResponse,
+        cursor: Optional[str],
+        limit: int,
+        ttl: int = CacheDuration.FIVE_MINUTES,
+    ) -> None:
+        """Enregistre les messages paginés d'un thread dans le cache.
+        
+        Args:
+            thread_id: ID du thread
+            paginated_response: Réponse paginée à mettre en cache
+            cursor: Curseur de pagination utilisé
+            limit: Nombre maximal de messages par page
+            ttl: Durée de vie en secondes
+        """
+        try:
+            cache_key = self._create_paginated_messages_cache_key(
+                thread_id=thread_id, cursor=cursor, limit=limit
+            )
+            await self.cache.save_pydantic_model_in_cache(
+                key=cache_key,
+                model_instance=paginated_response,
+                expire_seconds=ttl
+            )
+        except Exception as e:
+            CacheUtils.traiter_exceptions(e, logger)
+
+    async def get_paginated_messages_from_cache(
+        self,
+        thread_id: UUID,
+        cursor: Optional[str],
+        limit: int,
+    ) -> Optional[PaginatedMessagesResponse]:
+        """Récupère les messages paginés d'un thread depuis le cache.
+        
+        Args:
+            thread_id: ID du thread
+            cursor: Curseur de pagination
+            limit: Nombre maximal de messages par page
+
+        Returns:
+            Optional[PaginatedMessagesResponse]: Réponse paginée si trouvée, None sinon
+        """
+        try:
+            cache_key = self._create_paginated_messages_cache_key(
+                thread_id=thread_id, cursor=cursor, limit=limit
+            )
+            return await self.cache.get_pydantic_model_from_cache(
+                key=cache_key,
+                model_class=PaginatedMessagesResponse
+            )
+        except Exception as e:
+            CacheUtils.traiter_exceptions(e, logger)
+            return None
+
+    async def invalid_paginated_messages_in_cache(
+        self, thread_id: UUID
+    ) -> None:
+        """Invalide toutes les pages du cache paginé des messages d'un thread.
+
+        Supprime toutes les clés de la forme entity:thread:{id}:messages:cursor:*
+        via SCAN pour ne pas bloquer Redis.
+
+        Args:
+            thread_id: ID du thread
+        """
+        try:
+            pattern = f"entity:thread:{thread_id}:messages:cursor:*"
+            deleted = await self.cache.delete_by_pattern(pattern)
+            logger.info(
+                f"Cache paginé du thread {thread_id} invalidé ({deleted} clé(s) supprimée(s))"
+            )
+        except Exception as e:
+            CacheUtils.traiter_exceptions(e, logger)
+
 
     # Méthodes pour la liste des membres d'un thread
     @staticmethod

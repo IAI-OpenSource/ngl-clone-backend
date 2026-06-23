@@ -53,7 +53,7 @@ async def map_group_handler(ctx: EvolutionAPIClient, data: MessageEvent):
         )
         celery_app.send_task(
             WorkersTaskNames.SYNC_THREAD_MEMBERS_FROM_GROUP,
-            kwargs={"group_participants": task_data, "thread_id": str(res.data.id)},
+            kwargs={"group_participants": task_data, "thread_id": str(res.data.id), "must_send_response" : False},
         )
     finally:
         await redis.close()

@@ -91,8 +91,8 @@ class Thread(Base, IntegrityMapperMixin):
 
     # Index
     __table_args__ = (
-        Index(UQ_THREADS_SLUG, "slug", unique=True),
         Index(UQ_THREADS_WA_GROUP_JID, "wa_group_jid", unique=True),
+        Index(UQ_THREADS_SLUG, "slug", unique=True),
         Index(IDX_THREADS_WA_GROUP_JID, "wa_group_jid"),
         Index(IDX_THREADS_IS_ACTIVE, "is_active"),
         Index(IDX_THREADS_IS_LOCKED, "is_currently_locked"),
@@ -124,6 +124,6 @@ class Thread(Base, IntegrityMapperMixin):
 
     # Messages d'erreur
     ERROR_MESSAGES = {
-        UQ_THREADS_SLUG: "Un thread existe déjà avec ce slug.",
-        UQ_THREADS_WA_GROUP_JID: "Un thread existe déjà avec cet identifiant de groupe WhatsApp.",
+        UQ_THREADS_WA_GROUP_JID: "Un thread est déja assigné a ce groupe WhatsApp frérot",
+        UQ_THREADS_SLUG: "Un thread existe déjà avec ce slug frérot",
     }

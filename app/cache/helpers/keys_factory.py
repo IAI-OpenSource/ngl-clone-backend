@@ -46,6 +46,9 @@ class CacheKeysFactory:
         AvailableCacheKeys.RATE_LIMIT_USER_MESSAGES: CacheKey.new_key(
             key=AvailableCacheKeys.RATE_LIMIT_USER_MESSAGES,
             number_of_placeholders=1
+        ),
+        AvailableCacheKeys.MESSAGES_BY_THREAD_PAGINATED: CacheKey.new_key(
+            AvailableCacheKeys.MESSAGES_BY_THREAD_PAGINATED, 3
         )
     }
 

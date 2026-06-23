@@ -34,8 +34,7 @@ if TYPE_CHECKING:
 
 # Noms des contraintes
 FK_MESSAGES_THREAD = "fk_messages_thread"
-IDX_MESSAGES_THREAD_CREATED = "idx_messages_thread_created"
-IDX_MESSAGES_WA_STATUS = "idx_messages_wa_status"
+IDX_MESSAGES_THREAD_CREATED_ID = "idx_messages_thread_created_id"
 IDX_MESSAGES_WA_STATUS_CREATED = "idx_messages_wa_status_created"
 
 
@@ -84,9 +83,10 @@ class Message(Base, IntegrityMapperMixin):
     # Index
     __table_args__ = (
         Index(
-            IDX_MESSAGES_THREAD_CREATED,
+            IDX_MESSAGES_THREAD_CREATED_ID,
             "thread_id",
             "created_at",
+            "id",
             postgresql_using="btree",
         ),
         Index(

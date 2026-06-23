@@ -77,6 +77,27 @@ class ReadMessage(BaseModel):
 ReadMessage.model_rebuild()
 
 
+# Schémas pour la pagination par curseur
+class PaginatedMessagesResponse(BaseModel):
+    """Schéma pour la réponse paginée avec curseur."""
+    
+    messages: List[ReadMessage] = Field(description="Liste des messages de la page actuelle")
+    has_next_page: bool = Field(description="Indique s'il y a une page suivante")
+    next_cursor: Optional[str] = Field(
+        default=None,
+        description="Curseur pour la page suivante (base64 encodé). Null si pas de page suivante"
+    )
+    has_previous_page: bool = Field(description="Indique s'il y a une page précédente")
+    previous_cursor: Optional[str] = Field(
+        default=None,
+        description="Curseur pour la page précédente (base64 encodé). Null si pas de page précédente"
+    )
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+
+
 # Schémas enveloppes pour les réponses API
 class MessageInfos(DefaultAppApiResponse[ReadMessage]):
     """Schéma enveloppe pour un message unique."""
@@ -84,3 +105,7 @@ class MessageInfos(DefaultAppApiResponse[ReadMessage]):
 
 class ListMessagesInfos(DefaultAppApiResponse[List[ReadMessage]]):
     """Schéma enveloppe pour une liste de messages."""
+
+
+class PaginatedMessagesInfos(DefaultAppApiResponse[PaginatedMessagesResponse]):
+    """Schéma enveloppe pour une réponse paginée de messages."""
