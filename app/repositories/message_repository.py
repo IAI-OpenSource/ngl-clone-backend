@@ -9,7 +9,7 @@ from logging import getLogger
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from fastapi import status
@@ -21,6 +21,7 @@ from app.db.models.enums.enums import WAStatus
 from app.db.models.thread_member import ThreadMember
 from app.repositories import DefaultAppCrudResult, CrudResult
 from app.repositories.helpers.repositories_utils import RepositoriesUtils
+from app.utils.pagination_cursor_utils import PaginationCursorUtils
 
 logger = getLogger(__name__)
 
@@ -339,6 +340,242 @@ class MessageRepository:
                 messages_with_mentions.append((msg, mentioned_members))
 
             return CrudResult.crud_success(data=messages_with_mentions)
+
+        except Exception as e:
+            return await RepositoriesUtils.traiter_errors_en_global(
+                e, self.db, logger, Message
+            )
+
+    @staticmethod
+    def _build_messages_with_mentions(
+        messages: list[Message],
+    ) -> list[tuple[Message, list[Member]]]:
+        """Construit la liste de tuples (message, membres_mentionnés) depuis une liste de messages ORM.
+
+        Les mentions doivent déjà être chargées via selectinload.
+
+        Args:
+            messages: Liste de messages SQLAlchemy avec leurs mentions chargées
+
+        Returns:
+            Liste de tuples (message, liste_des_membres_mentionnés)
+        """
+        return [
+            (msg, [mention.member for mention in msg.mentions])
+            for msg in messages
+        ]
+
+    def _base_paginated_stmt(
+        self,
+        thread_id: UUID,
+        is_hidden: Optional[bool],
+    ):
+        """Construit le stmt de base commun à toutes les branches de pagination.
+
+        Args:
+            thread_id: ID du thread
+            is_hidden: Filtre sur le champ is_hidden
+
+        Returns:
+            Select SQLAlchemy configuré avec les filtres et le selectinload des mentions
+        """
+        stmt = select(Message).where(Message.thread_id == thread_id)
+
+        if is_hidden is True:
+            stmt = stmt.where(Message.is_hidden == True)
+        elif is_hidden is False:
+            stmt = stmt.where(Message.is_hidden == False)
+
+        stmt = stmt.options(
+            selectinload(Message.mentions).selectinload(MessageMention.member)
+        )
+        return stmt
+
+    async def get_messages_by_thread_id_paginated(
+        self,
+        thread_id: UUID,
+        limit: int = 20,
+        cursor: Optional[str] = None,
+        is_hidden: Optional[bool] = False,
+    ) -> DefaultAppCrudResult[tuple[list[tuple[Message, list[Member]]], bool, bool, Optional[str], Optional[str]]]:
+        """Récupère les messages d'un thread avec pagination par curseur.
+
+        Cette méthode utilise une requête optimisée avec des index sur (thread_id, created_at, id)
+        pour une pagination efficace par curseur.
+
+        Args:
+            thread_id: L'ID du thread
+            limit: Nombre maximum de messages à récupérer (par défaut 20)
+            cursor: Curseur de pagination encodé (base64). Si None, récupère la première page.
+                    Format: {"thread_id": UUID, "id": UUID, "dateable": datetime, "direction": "next"|"previous"}
+            is_hidden: Filtre optionnel pour les messages cachés (par défaut False = exclut les cachés)
+
+        Returns:
+            CrudResult contenant un tuple avec:
+                - Liste de tuples (message, liste_des_membres_mentionnés)
+                - has_next_page: True s'il y a une page suivante
+                - has_previous_page: True s'il y a une page précédente
+                - next_cursor: Curseur pour la page suivante (base64 encodé)
+                - previous_cursor: Curseur pour la page précédente (base64 encodé)
+        """
+        try:
+            has_next_page = False
+            has_previous_page = False
+            next_cursor: Optional[str] = None
+            previous_cursor: Optional[str] = None
+
+            if cursor is None:
+                # --- Première page : messages les plus récents, ordre DESC ---
+                stmt = (
+                    self._base_paginated_stmt(thread_id, is_hidden)
+                    .order_by(desc(Message.created_at), desc(Message.id))
+                    .limit(limit + 1)  # +1 pour détecter s'il y a une page suivante
+                )
+
+                result = await self.db.execute(stmt)
+                messages = list(result.scalars().all())
+
+                if len(messages) > limit:
+                    has_next_page = True
+                    messages = messages[:limit]
+
+                messages_with_mentions = self._build_messages_with_mentions(messages)
+
+                if has_next_page and messages_with_mentions:
+                    last_msg = messages_with_mentions[-1][0]
+                    next_cursor = PaginationCursorUtils.encode_messages_cursor(
+                        last_item_id=last_msg.id,
+                        last_item_created_at=last_msg.created_at,
+                        thread_id=thread_id,
+                        is_next_page=True,
+                    )
+
+                # Pas de page précédente pour la première page
+                has_previous_page = False
+
+            else:
+                # --- Navigation avec curseur ---
+                try:
+                    thread_id_from_cursor, last_msg_id, last_created_at, is_next = (
+                        PaginationCursorUtils.decode_messages_cursor(cursor)
+                    )
+                except ValueError as e:
+                    return CrudResult.crud_failure(
+                        RepositoriesUtils.not_found_error(f"Curseur de pagination invalide: {e}"),
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # Valider que le curseur correspond au bon thread
+                if thread_id_from_cursor != thread_id:
+                    return CrudResult.crud_failure(
+                        RepositoriesUtils.not_found_error(
+                            "Curseur de pagination invalide pour ce thread"
+                        ),
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                if is_next:
+                    # --- Page suivante : messages plus anciens que le curseur, ordre DESC ---
+                    stmt = (
+                        self._base_paginated_stmt(thread_id, is_hidden)
+                        .where(
+                            or_(
+                                Message.created_at < last_created_at,
+                                and_(
+                                    Message.created_at == last_created_at,
+                                    Message.id < last_msg_id,
+                                ),
+                            )
+                        )
+                        .order_by(desc(Message.created_at), desc(Message.id))
+                        .limit(limit + 1)
+                    )
+
+                    result = await self.db.execute(stmt)
+                    messages = list(result.scalars().all())
+
+                    if len(messages) > limit:
+                        has_next_page = True
+                        messages = messages[:limit]
+
+                    messages_with_mentions = self._build_messages_with_mentions(messages)
+
+                    if has_next_page and messages_with_mentions:
+                        new_last_msg = messages_with_mentions[-1][0]
+                        next_cursor = PaginationCursorUtils.encode_messages_cursor(
+                            last_item_id=new_last_msg.id,
+                            last_item_created_at=new_last_msg.created_at,
+                            thread_id=thread_id,
+                            is_next_page=True,
+                        )
+
+                    # Il y a forcément une page précédente puisqu'on a avancé
+                    has_previous_page = True
+                    previous_cursor = PaginationCursorUtils.encode_messages_cursor(
+                        last_item_id=last_msg_id,
+                        last_item_created_at=last_created_at,
+                        thread_id=thread_id,
+                        is_next_page=False,
+                    )
+
+                else:
+                    # --- Page précédente : messages plus récents que le curseur ---
+                    # On récupère en ordre ASC pour avoir le "slice" correct côté ancien,
+                    # puis on inverse pour restituer l'ordre DESC attendu par le client.
+                    stmt = (
+                        self._base_paginated_stmt(thread_id, is_hidden)
+                        .where(
+                            or_(
+                                Message.created_at > last_created_at,
+                                and_(
+                                    Message.created_at == last_created_at,
+                                    Message.id > last_msg_id,
+                                ),
+                            )
+                        )
+                        .order_by(Message.created_at, Message.id)  # ASC pour limiter depuis l'ancien bord
+                        .limit(limit + 1)
+                    )
+
+                    result = await self.db.execute(stmt)
+                    # messages en ordre ASC : [plus_ancien ... plus_recent]
+                    messages = list(result.scalars().all())
+
+                    if len(messages) > limit:
+                        # On garde les `limit` messages les plus récents
+                        # (en ASC cela correspond à la fin de la liste)
+                        has_previous_page = True
+                        messages = messages[len(messages) - limit:]
+                    
+                    # Inverser pour restituer l'ordre DESC attendu
+                    messages.reverse()
+
+                    messages_with_mentions = self._build_messages_with_mentions(messages)
+
+                    if has_previous_page and messages_with_mentions:
+                        # Le message le plus récent de la page (premier après reverse) sert de curseur précédent
+                        new_first_msg = messages_with_mentions[0][0]
+                        previous_cursor = PaginationCursorUtils.encode_messages_cursor(
+                            last_item_id=new_first_msg.id,
+                            last_item_created_at=new_first_msg.created_at,
+                            thread_id=thread_id,
+                            is_next_page=False,
+                        )
+
+                    # Il y a forcément une page suivante puisqu'on a reculé
+                    has_next_page = True
+                    if messages_with_mentions:
+                        new_last_msg = messages_with_mentions[-1][0]
+                        next_cursor = PaginationCursorUtils.encode_messages_cursor(
+                            last_item_id=new_last_msg.id,
+                            last_item_created_at=new_last_msg.created_at,
+                            thread_id=thread_id,
+                            is_next_page=True,
+                        )
+
+            return CrudResult.crud_success(
+                data=(messages_with_mentions, has_next_page, has_previous_page, next_cursor, previous_cursor)
+            )
 
         except Exception as e:
             return await RepositoriesUtils.traiter_errors_en_global(

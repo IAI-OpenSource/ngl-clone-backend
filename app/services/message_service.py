@@ -1,4 +1,6 @@
+from asyncio import gather
 from logging import getLogger
+from typing import Optional
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,9 +9,8 @@ from app.cache.message_cache import MessageCache
 from app.cache.thread_cache import ThreadCache
 from app.globals.cache_duration import CacheDuration
 from app.repositories.message_repository import MessageRepository
-from app.schemas.message_schemas import CreateMessage, ReadMessage
+from app.schemas.message_schemas import CreateMessage, ReadMessage, PaginatedMessagesResponse
 from app.schemas.thread_schemas import ThreadAuthPayload
-
 from . import ServiceResult, DefaultAppServiceResult
 from .rate_limiter_service import RateLimiterService
 from .thread_service import ThreadService
@@ -122,6 +123,91 @@ class MessageService:
             service_name=self._service_name,
         )
 
+    async def service_get_messages_by_thread_id_paginated(
+        self,
+        thread_id: UUID,
+        limit: int = 20,
+        cursor: Optional[str] = None,
+    ) -> DefaultAppServiceResult[PaginatedMessagesResponse]:
+        """Logique métier de récupération paginée des messages d'un thread avec curseur.
+        
+        Cette méthode gère :
+        - La récupération depuis le cache si disponible
+        - La requête en base de données avec pagination par curseur
+        - Le cache des résultats paginés
+        - La gestion des erreurs
+        
+        Args:
+            thread_id: L'ID du thread
+            limit: Nombre de messages par page (par défaut 20)
+            cursor: Curseur de pagination encodé (base64). None pour la première page.
+        
+        Returns:
+            ServiceResult contenant PaginatedMessagesResponse avec:
+                - messages: Liste des messages de la page
+                - has_next_page: True s'il y a une page suivante
+                - next_cursor: Curseur pour la page suivante
+                - has_previous_page: True s'il y a une page précédente
+                - previous_cursor: Curseur pour la page précédente
+        """
+
+        # Validation défensive du limit (au cas où la méthode est appelée hors contexte FastAPI)
+        if not (1 <= limit <= 100):
+            limit = max(1, min(100, limit))
+            logger.warning(f"Valeur de limit hors bornes, ajustée à {limit}")
+
+        # Essayer de récupérer depuis le cache d'abord
+
+        cached_paginated = await self.__thread_cache.get_paginated_messages_from_cache(
+            thread_id=thread_id,
+            cursor=cursor,
+            limit=limit,
+        )
+
+        if cached_paginated is not None:
+            return ServiceResult.service_success(data=cached_paginated)
+
+        # Récupérer depuis la base de données
+        messages_repo = await self.__message_repo.get_messages_by_thread_id_paginated(
+            thread_id=thread_id,
+            limit=limit,
+            cursor=cursor,
+            is_hidden=False,  # Par défaut, on exclut les messages cachés
+        )
+
+        if messages_repo.is_error():
+            logger.error(f"Erreur: {messages_repo.error}")
+            return messages_repo.to_service_error(service_name=self._service_name)
+
+        messages_with_mentions, has_next_page, has_previous_page, next_cursor, previous_cursor = messages_repo.data
+
+        # Formater les messages
+        read_messages = [
+            self._format_message_with_mentions(message) for message in messages_with_mentions
+        ]
+
+        # Créer la réponse paginée
+        paginated_response = PaginatedMessagesResponse(
+            messages=read_messages,
+            has_next_page=has_next_page,
+            next_cursor=next_cursor,
+            has_previous_page=has_previous_page,
+            previous_cursor=previous_cursor
+        )
+
+        # Mettre en cache les résultats paginés
+        await self.__thread_cache.set_paginated_messages_in_cache(
+            thread_id=thread_id,
+            paginated_response=paginated_response,
+            cursor=cursor,
+            limit=limit,
+        )
+
+        return ServiceResult.service_success(
+            data=paginated_response,
+            service_name=self._service_name,
+        )
+
     async def service_create_message(
         self, message_data: CreateMessage, user_payload: ThreadAuthPayload,
     ) -> DefaultAppServiceResult[ReadMessage]:
@@ -146,7 +232,6 @@ class MessageService:
         if verif.is_error():
             return ServiceResult.service_failure(error=verif.error, status_code=verif.status_code)
 
-
         message_repo = await self.__message_repo.insert_message(
             thread_id=thread_id_uuid,
             content=message_data.content,
@@ -164,8 +249,15 @@ class MessageService:
 
         read_message = ReadMessage.model_validate(message_repo.data)
 
-        await self.__thread_cache.invalid_messages_by_thread_in_cache(
-            thread_id=thread_id_uuid
+        # Invalider le cache de la liste complète ET le cache paginé
+        gather(
+            self.__thread_cache.invalid_messages_by_thread_in_cache(
+                thread_id=thread_id_uuid
+            ),
+            self.__thread_cache.invalid_paginated_messages_in_cache(
+                thread_id=thread_id_uuid
+            ),
+            return_exceptions=True,
         )
 
         return ServiceResult.service_success(

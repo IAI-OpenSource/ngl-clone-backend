@@ -160,7 +160,7 @@ class CardGenerator:
         template_name: str,
         context: dict[str, object],
         *,
-        selector: str | None = "#card",
+        selector: str | None = "#card-container",
         viewport_override: ViewportSize | None = None,
     ) -> bytes:
         """
@@ -205,7 +205,7 @@ class CardGenerator:
         self,
         html: str,
         *,
-        selector: str | None = "#card",
+        selector: str | None = "#card-container",
     ) -> bytes:
         """
         Variante de render() acceptant du HTML brut (sans passer par Jinja2).
