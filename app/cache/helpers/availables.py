@@ -46,3 +46,6 @@ class AvailableCacheKeys(str, Enum):
     THREADS_LIST = "entity:thread:list"  # Clé pour la liste de tous les threads
     MESSAGES_BY_THREAD_LIST = BaseCacheEntity.THREAD + ":messageslist"  # Clé pour la liste des messages d'un thread
     MEMBERS_BY_THREAD_LIST = BaseCacheEntity.THREAD + ":memberslist"  # Clé pour la liste des membres d'un thread
+
+    # Clés de cache pour la pagination par curseur
+    MESSAGES_BY_THREAD_PAGINATED = BaseCacheEntity.THREAD + ":messages:cursor:{cursor}:limit:{limit}"  # Clé pour les messages paginés d'un thread

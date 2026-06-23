@@ -193,6 +193,27 @@ class ThreadRepository:
                 e, self.db, logger, Thread
             )
 
+    async def update_last_wa_sync_at(self, thread_id: UUID, sync_time: datetime) -> DefaultAppCrudResult[Thread]:
+        """Fonction pour mettre à jour le champ last_wa_sync_at d'un thread."""
+        try:
+            old_thread = await self.get_thread_by_id(thread_id=thread_id)
+
+            if old_thread.is_error():
+                return old_thread
+
+            old_thread.data.last_wa_sync_at = sync_time
+            old_thread.data.updated_at = datetime.now(UTC)
+
+            await self.db.commit()
+
+            logger.info(f"Thread {thread_id} last_wa_sync_at mis à jour avec succès")
+            return CrudResult.crud_success(data=old_thread.data)
+
+        except Exception as e:
+            return await RepositoriesUtils.traiter_errors_en_global(
+                e, self.db, logger, Thread
+            )
+
     async def delete_thread(self, thread_id: UUID) -> DefaultAppCrudResult[None]:
         """Fonction pour supprimer un thread de la base de données."""
         try:

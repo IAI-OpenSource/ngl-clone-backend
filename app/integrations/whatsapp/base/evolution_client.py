@@ -471,6 +471,34 @@ class EvolutionAPIClient:
         logger.info("%s → %s | id=%s", media_type.value, number, sent.message_id)
         return sent
 
+    async def send_sticker(
+        self,
+        number:   str,
+        url:      str,
+        delay:        float | None = None
+    ) -> WASentMessage:
+        """
+        Envoie un sticker.
+        POST /send/sticker
+
+        Args:
+            number:     JID du destinataire
+            url:        URL publique du média
+            delay:      Override délai anti-ban
+        """
+        if delay:
+            await asyncio.sleep(delay)
+
+        payload: dict[str, Any] = {
+            "number": number,
+            "sticker":    url,
+        }
+
+        data = await self._request("POST", "send/sticker", json=payload)
+        sent = WASentMessage.model_validate(data.get("data"))
+        logger.info("%s → %s | id=%s", "STICKER", number, sent.message_id)
+        return sent
+
     async def send_image(
         self,
         number:  str,
@@ -487,6 +515,8 @@ class EvolutionAPIClient:
         return await self.send_media(
             number, url, WAMediaType.IMAGE, caption=caption, delay=delay, mention_jids=mention_jids
         )
+
+
 
     async def send_video(
         self,
