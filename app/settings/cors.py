@@ -1,15 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.config import ALLOWED_ORIGINS
+
 
 def setup_app_cors(app: FastAPI) -> None:
     """Configure les CORS pour l'application FastAPI"""
 
     # Liste des origines autorisées
-    origins = [
-        "http://localhost:5173",
-        # "autre origine autorisée"
-    ]  # Rien pour le moment
+    origins = ALLOWED_ORIGINS.split(",")
+
+    print(f"Configuration CORS : {origins}")
 
     app.add_middleware(
         CORSMiddleware,
