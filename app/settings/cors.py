@@ -8,6 +8,7 @@ def setup_app_cors(app: FastAPI) -> None:
     # Liste des origines autorisées
     origins = [
         "http://localhost:5173",
+        "https://localhost:5173",
         # "autre origine autorisée"
     ]  # Rien pour le moment
 
