@@ -12,6 +12,7 @@ from app.integrations.whatsapp.base.evolution_client import (
 )
 from app.integrations.whatsapp.card_generator import CardGenerator
 from app.integrations.whatsapp.exceptions.evolution_client_exceptions import EvolutionError
+from app.integrations.whatsapp.messages import format_new_message_caption
 from app.repositories.message_repository import MessageRepository
 from app.repositories.thread_repository import ThreadRepository
 from app.utils.format import formater_date_heure_en_francais
@@ -109,7 +110,17 @@ async def _send_message_to_group_async(message_id: UUID):
                 time_stamp=message.created_at,
                 mentioned_names=mention_jids,
             )
-            sent = await client.send_image(number=group_jid, caption="📣 Nouveau Message", url=image_to_send, mention_jids=mention_jids)
+            names_to_mention = [
+                m.display_name or m.phone_number or (m.wa_jid.split("@")[0] if m.wa_jid else "Membre")
+                for m in mentioned_members
+            ]
+            caption = format_new_message_caption(thread.slug, names_to_mention)
+            sent = await client.send_image(
+                number=group_jid,
+                caption=caption,
+                url=image_to_send,
+                mention_jids=mention_jids,
+            )
 
             # Mettre à jour le message en base avec le statut et l'ID WA
             await message_repo.update_message(message_id=message_id, wa_message_id=sent.message_id, wa_status=WAStatus.SENT)
