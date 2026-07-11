@@ -28,8 +28,8 @@ def format_new_message_caption(thread_slug: str, mentioned_names: list[str] | No
 
 def success_thread_add(thread: ReadThread, mdp: str) -> str:
     """Message de succès pour l'ajout d'un thread."""
-    new_message_url = f"{FRONTEND_URL}/app/threads/{thread.slug}/new-message"
-    all_messages_url = f"{FRONTEND_URL}/app/threads/{thread.slug}/messages"
+    new_message_url = f"{FRONTEND_URL}/threads/{thread.slug}/new-message"
+    all_messages_url = f"{FRONTEND_URL}/threads/{thread.slug}/messages"
     
     return f"""🎉 *Thread '{thread.name}' configuré avec succès !*
 
