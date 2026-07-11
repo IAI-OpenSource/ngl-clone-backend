@@ -17,6 +17,7 @@ from .thread_service import ThreadService
 from ..cache.base.cache_wrapper import CacheWrapper
 from ..db.models.member import Member
 from ..db.models.message import Message
+from ..globals.businnes_error import AppError, AppErrorType
 from ..globals.services_names import ServicesNames
 from ..schemas.member_schemas import ReadMember
 from ..worker.celery_app import celery_app
@@ -225,6 +226,13 @@ class MessageService:
                 error=rate_limit_check_res.error,
                 status_code=rate_limit_check_res.status_code
             )
+        try:
+            CreateMessage.validate_content(message_data.content)
+        except ValueError as e:
+            return ServiceResult.service_failure(error=AppError(
+                error_message=str(e),
+                error_type=AppErrorType.BAD_REQUEST
+            ), status_code=400)
 
         # Vérifier que le thread autorise la création de nouveaux messages
         thread_svc = ThreadService(self.__db, self.__cache)

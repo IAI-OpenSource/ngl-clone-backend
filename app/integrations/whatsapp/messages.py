@@ -1,13 +1,44 @@
+from app.core.config import FRONTEND_URL
 from app.schemas.thread_schemas import ReadThread
 from app.utils.format import formater_date_heure_en_francais
 
 
+def format_new_message_caption(thread_slug: str, mentioned_names: list[str] | None = None) -> str:
+    """Formate la légende de l'image envoyée sur WhatsApp pour un nouveau message."""
+    new_message_url = f"{FRONTEND_URL}/threads/{thread_slug}/new-message"
+    all_messages_url = f"{FRONTEND_URL}/threads/{thread_slug}/messages"
+    
+    mention_intro = ""
+    if mentioned_names:
+        formatted_names = [name.strip().title() for name in mentioned_names if name]
+        
+        if len(formatted_names) == 1:
+            mention_intro = f"Hop {formatted_names[0]}, on parle de toi ici ! 🤫\n\n"
+        elif len(formatted_names) == 2:
+            mention_intro = f"Hop {formatted_names[0]} et {formatted_names[1]}, on parle de vous ici ! 🤫\n\n"
+        elif len(formatted_names) > 2:
+            names_str = ", ".join(formatted_names[:-1]) + f" et {formatted_names[-1]}"
+            mention_intro = f"Hop {names_str}, on parle de vous ici ! 🤫\n\n"
+            
+    return f"""{mention_intro}📣 *Nouveau Message Anonyme !*
+
+💬 *Écris ton message :* {new_message_url}
+👀 *Voir les autres messages :* {all_messages_url}"""
+
+
 def success_thread_add(thread: ReadThread, mdp: str) -> str:
     """Message de succès pour l'ajout d'un thread."""
-    return f"""Thread '{thread.name}' ajouté avec succès !
-Slug: {thread.slug}
-Vous pouvez maintenant accéder à ce thread via l'API ou l'interface utilisateur.
-Mot Passe par défaut : {mdp}"""
+    new_message_url = f"{FRONTEND_URL}/threads/{thread.slug}/new-message"
+    all_messages_url = f"{FRONTEND_URL}/threads/{thread.slug}/messages"
+    
+    return f"""🎉 *Thread '{thread.name}' configuré avec succès !*
+
+🔗 *Lien pour envoyer un message anonyme :*
+👉 {new_message_url}
+
+🔑 *Accéder aux messages reçus :*
+👉 {all_messages_url}
+Mot de passe : `{mdp}`"""
 
 
 def format_ngl_status(thread: ReadThread) -> str:
@@ -22,6 +53,9 @@ def format_ngl_status(thread: ReadThread) -> str:
     last_update_at = formater_date_heure_en_francais(thread.updated_at)
     description = thread.description or "Aucune"
     
+    new_message_url = f"{FRONTEND_URL}/threads/{thread.slug}/new-message"
+    all_messages_url = f"{FRONTEND_URL}/threads/{thread.slug}/messages"
+    
     return f"""📡 *Statut du Thread*
 
 📌 *Nom:* {thread.name}
@@ -33,7 +67,10 @@ def format_ngl_status(thread: ReadThread) -> str:
 
 📅 *Créé le:* {created}
 ✏️ *Dernière modification:* {last_update_at}
-🔄 *Dernière sync:* {last_sync}"""
+🔄 *Dernière sync:* {last_sync}
+
+💬 *Écris ton message:* {new_message_url}
+👀 *Voir les autres messages:* {all_messages_url}"""
 
 
 def format_lock_confirmation(thread_name: str) -> str:
