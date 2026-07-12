@@ -2,43 +2,48 @@ from app.core.config import FRONTEND_URL
 from app.schemas.thread_schemas import ReadThread
 from app.utils.format import formater_date_heure_en_francais
 
+def _get_all_messages_url(thread_slug: str) -> str:
+    return f"{FRONTEND_URL}/threads/{thread_slug}/new-message"
+
+def _get_new_message_url(thread_slug: str) -> str:
+    return f"{FRONTEND_URL}/threads/{thread_slug}/messages"
 
 def format_new_message_caption(thread_slug: str, mentioned_names: list[str] | None = None) -> str:
     """Formate la légende de l'image envoyée sur WhatsApp pour un nouveau message."""
-    new_message_url = f"{FRONTEND_URL}/threads/{thread_slug}/new-message"
-    all_messages_url = f"{FRONTEND_URL}/threads/{thread_slug}/messages"
+
     
     mention_intro = ""
     if mentioned_names:
         formatted_names = [name.strip().title() for name in mentioned_names if name]
         
         if len(formatted_names) == 1:
-            mention_intro = f"Hop {formatted_names[0]}, on parle de toi ici ! 🤫\n\n"
+            mention_intro = f"{formatted_names[0]}, on parle de toi ici ! 🤫\n\n"
         elif len(formatted_names) == 2:
-            mention_intro = f"Hop {formatted_names[0]} et {formatted_names[1]}, on parle de vous ici ! 🤫\n\n"
+            mention_intro = f"{formatted_names[0]} et {formatted_names[1]}, on parle de vous ici ! 🤫\n\n"
         elif len(formatted_names) > 2:
             names_str = ", ".join(formatted_names[:-1]) + f" et {formatted_names[-1]}"
-            mention_intro = f"Hop {names_str}, on parle de vous ici ! 🤫\n\n"
+            mention_intro = f"{names_str}, on parle de vous ici ! 🤫\n\n"
             
-    return f"""{mention_intro}📣 *Nouveau Message Anonyme !*
+    return f"""📣 *Nouveau Message Anonyme !*
+    
+{mention_intro}
 
-💬 *Écris ton message :* {new_message_url}
-👀 *Voir les autres messages :* {all_messages_url}"""
+💬 *Écris ton message :* {_get_new_message_url(thread_slug)}
+👀 *Voir les autres messages :* {_get_all_messages_url(thread_slug)}"""
 
 
 def success_thread_add(thread: ReadThread, mdp: str) -> str:
     """Message de succès pour l'ajout d'un thread."""
-    new_message_url = f"{FRONTEND_URL}/threads/{thread.slug}/new-message"
-    all_messages_url = f"{FRONTEND_URL}/threads/{thread.slug}/messages"
     
     return f"""🎉 *Thread '{thread.name}' configuré avec succès !*
+    
+🔒 *Mot de passe par défaut :* `{mdp}`
 
 🔗 *Lien pour envoyer un message anonyme :*
-👉 {new_message_url}
+👉 {_get_new_message_url(thread.slug)}
 
 🔑 *Accéder aux messages reçus :*
-👉 {all_messages_url}
-Mot de passe : `{mdp}`"""
+👉 {_get_all_messages_url(thread.slug)}"""
 
 
 def format_ngl_status(thread: ReadThread) -> str:
@@ -52,9 +57,7 @@ def format_ngl_status(thread: ReadThread) -> str:
     created = formater_date_heure_en_francais(thread.created_at)
     last_update_at = formater_date_heure_en_francais(thread.updated_at)
     description = thread.description or "Aucune"
-    
-    new_message_url = f"{FRONTEND_URL}/threads/{thread.slug}/new-message"
-    all_messages_url = f"{FRONTEND_URL}/threads/{thread.slug}/messages"
+
     
     return f"""📡 *Statut du Thread*
 
@@ -69,8 +72,8 @@ def format_ngl_status(thread: ReadThread) -> str:
 ✏️ *Dernière modification:* {last_update_at}
 🔄 *Dernière sync:* {last_sync}
 
-💬 *Écris ton message:* {new_message_url}
-👀 *Voir les autres messages:* {all_messages_url}"""
+💬 *Écris ton message:* {_get_new_message_url(thread.slug)}
+👀 *Voir les autres messages:* {_get_all_messages_url(thread.slug)}"""
 
 
 def format_lock_confirmation(thread_name: str) -> str:
@@ -140,11 +143,11 @@ NGL Clone est un projet open source pour créer et gérer des threads de discuss
 💀 Essayez pas de pirater le truc ou de faire de la merde svp, pardon c'est un truc juste pour s'amuser🤣
 
 🌐 *Liens utiles:*
-• Code source Front : Pas encore (Merci benito 🤣) 
+• Code source Front : https://github.com/IAI-OpenSource/ngl-clone-frontend
 • Code source Back : https://github.com/IAI-OpenSource/ngl-clone-backend 
 • Documentation: Aller lire le code 🤣
 • Contribuer: DM ou si t'as la flemme de DM ouvre directement une PR, si c'est bon on va merger
 
-💡 *Technos:* Typescript, Python, React, FastAPI, SQLAlchemy, WhatsApp API (Evolution)
+💡 *Technos:* Typescript, Python, React, FastAPI, SQLAlchemy, WhatsApp API (Evolution) et d'autres trucs mais j'ai la flemme de tout lister
 
-🤝 *Contribuez:* Ce projet est open source, n'hésitez pas à contribuer pour améliorer le spaghetti !"""
+🤝 *Contribuez:* Ce projet est Full open source, n'hésitez pas à contribuer pour améliorer le spaghetti !"""
