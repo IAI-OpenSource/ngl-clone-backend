@@ -27,7 +27,7 @@ class CookieManager:
                 max_age=age,
                 secure=not is_dev,
                 httponly=True,
-                samesite="lax" if is_dev else "none",
+                samesite="lax",
                 path="/",
             )
 
@@ -53,8 +53,13 @@ class CookieManager:
         """fonction pour supprimer un cookie"""
 
         try:
-
-            self.response.delete_cookie(key=cookie_id)
+            is_dev = ENVIRONMENT == "LOCAL"
+            self.response.delete_cookie(
+                key=cookie_id,
+                path="/",
+                samesite="lax",
+                secure=not is_dev,
+            )
 
         except Exception:
             raise HTTPException(
