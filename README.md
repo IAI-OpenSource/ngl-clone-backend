@@ -46,11 +46,11 @@ Ce repository contient **le backend uniquement**. L'écosystème complet du proj
 
 ### 🔗 Repositories Connexes
 
-| Repository | Description | Stack |
-| :--- | :--- | :--- |
-| **ngl-clone-backend** (ce repo) | API backend, logique métier, intégration WhatsApp | FastAPI, PostgreSQL, Redis, Celery |
-| **[ngl-clone-frontend](#)** | [À COMPLÉTER : Lien et description du repository frontend] | [À COMPLÉTER : Stack frontend (React, Vue, Svelte, etc.)] |
-| **[ngl-clone-docs](#)** | [À COMPLÉTER : Documentation partagée, spécifications API, guides d'installation] | Markdown, [À COMPLÉTER : outil de documentation] |
+| Repository                                                                           | Description | Stack                                            |
+|:-------------------------------------------------------------------------------------| :--- |:-------------------------------------------------|
+| **ngl-clone-backend** (ce repo)                                                      | API backend, logique métier, intégration WhatsApp | FastAPI, PostgreSQL, Redis, Celery               |
+| **[ngl-clone-frontend](https://github.com/IAI-OpenSource/ngl-clone-frontend/)**      | Client web, compositeur de messages anonymes et interface utilisateur | React 19, Tailwind CSS v4, Zustand...            |
+| **[ngl-clone-docs](#)**                                                              | [À COMPLÉTER : Documentation partagée, spécifications API, guides d'installation] | Markdown, [À COMPLÉTER : outil de documentation] |
 
 ### 🚀 Démarrer l'ensemble du projet
 
