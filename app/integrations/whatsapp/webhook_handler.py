@@ -111,7 +111,7 @@ class WebhookHandler:
                     "Pour associer ce groupe à un thread et commencer à gérer vos messages, "
                     "utilisez la commande :\n\n"
                     "🔗 */map_group*\n\n"
-                    "C'est tout !"
+                    "C'est tout !!!"
                 )
             )
             logger.info(f"Message de présentation envoyé au groupe {group_data.JID}")

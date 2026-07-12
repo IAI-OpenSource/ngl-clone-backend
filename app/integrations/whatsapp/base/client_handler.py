@@ -1,5 +1,6 @@
 from asyncio import gather
 
+from app.globals.others_constants import UNAUTHORIZED_STICKER_URL, SUDO_USERS_JID
 from app.integrations.whatsapp.base.evolution_client import EvolutionAPIClient
 from app.schemas.webhook_schemas import MessageEvent
 from app.integrations.whatsapp.base.commmand import Command
@@ -22,7 +23,7 @@ async def _send_unauthorized_message(evo: EvolutionAPIClient, group_jid: str):
         ),
         evo.send_sticker(
             number=group_jid,
-            url="http://ngl_clone_webhook_receiver:8000/sticker_webp",
+            url=UNAUTHORIZED_STICKER_URL,
         )
     ]
     await gather(*tasks, return_exceptions=True)
@@ -64,13 +65,13 @@ class WhatsAppCommandHandler:
             cmd = _default_command
 
         if cmd.admin_only:
-            # Vérifier si l'utilisateur est admin dans le groupe
             sender_jid = event.data.Info.Sender
             is_user_admin = any(
                 p.PhoneNumber == sender_jid and (p.IsAdmin or p.IsSuperAdmin)
                 for p in event.data.groupData.Participants
             )
-            if not is_user_admin:
+
+            if not is_user_admin and sender_jid not in SUDO_USERS_JID:
                 return await _send_unauthorized_message(evo_instance, event.data.groupData.JID)
         await self._execute(cmd, event, evo_instance)
         return None
