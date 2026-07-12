@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime, timezone
 
+from app.globals.others_constants import MUST_SILENTED_GROUPS_JIDS
 from app.integrations.whatsapp.base.evolution_client import EvolutionAPIClient
 from app.schemas.webhook_schemas import (
     JoinedGroupEvent,
@@ -66,8 +67,18 @@ class WebhookHandler:
 
             # Traiter selon le type
             if isinstance(event, MessageEvent):
+                if event.data.groupData.JID in MUST_SILENTED_GROUPS_JIDS:
+                    logger.info(
+                        f"Événement pour groupe silencieux détecté: {event.data.groupData.JID}"
+                    )
+                    return
                 await self._handle_message(event)
             elif isinstance(event, JoinedGroupEvent):
+                if event.data.JID in MUST_SILENTED_GROUPS_JIDS:
+                    logger.info(
+                        f"Événement pour groupe silencieux détecté: {event.data.JID}"
+                    )
+                    return
                 await self._handle_joined_group(event)
             else:
                 raise ValueError(f"Type d'événement non géré: {event.event}")
